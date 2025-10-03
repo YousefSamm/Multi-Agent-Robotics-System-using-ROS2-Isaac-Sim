@@ -50,3 +50,22 @@ node_modules/
 *.bak
 *.backup
 backup/
+
+# Isaac Sim large assets and collected files
+isaacsim/config/backup/
+isaacsim/config/Collected_*/
+isaacsim/config/__pycache__/
+
+# Large binary files
+*.usd
+*.usda
+*.usdc
+*.pt
+*.pth
+*.onnx
+*.engine
+*.trt
+
+# Isaac Sim cache and temporary files
+isaacsim/config/.thumbs/
+isaacsim/config/.collect.mapping.json
