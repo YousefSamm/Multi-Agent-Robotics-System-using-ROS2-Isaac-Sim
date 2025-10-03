@@ -1,0 +1,33 @@
+recoveries_server:
+  ros__parameters:
+    costmap_topic: local_costmap/costmap_raw
+    footprint_topic: local_costmap/published_footprint
+    cycle_frequency: 10.0
+    behavior_plugins: ["spin", "backup", "wait"]
+    
+    spin:
+      plugin: "nav2_behaviors/Spin"
+      simulate_ahead_time: 2.0
+      max_rotational_vel: 0.5
+      min_rotational_vel: 0.1
+      rotational_acc_lim: 1.0
+      
+    backup:
+      plugin: "nav2_behaviors/BackUp"
+      simulate_ahead_time: 2.0
+      backup_dist: 0.1
+      backup_speed: 0.1
+      
+    wait:
+      plugin: "nav2_behaviors/Wait"
+      simulate_ahead_time: 2.0
+      wait_duration: 2.0
+      
+    global_frame: odom
+    robot_base_frame: "base_link"
+    transform_timeout: 0.1
+    use_sim_time: true
+    simulate_ahead_time: 2.0
+    max_rotational_vel: 0.5
+    min_rotational_vel: 0.1
+    rotational_acc_lim: 1.0

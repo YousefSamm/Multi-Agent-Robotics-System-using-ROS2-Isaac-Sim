@@ -1,0 +1,7 @@
+# Goal
+string command  # "pick" or "drop" or "init_pos"
+---
+# Result
+bool success
+---
+# Feedback

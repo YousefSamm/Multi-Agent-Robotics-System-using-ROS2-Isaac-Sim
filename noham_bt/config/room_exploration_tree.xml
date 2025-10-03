@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<root BTCPP_format="4" main_tree_to_execute="RoomExplorationTree">
+    <BehaviorTree ID="RoomExplorationTree">
+        <Sequence name="RoomNavigationMission">
+            <!-- Room 1: Navigate then Rotate -->
+            <Sequence name="Room1Sequence">
+                <Action ID="NavigateToPose" name="GoToRoom1" target_pose="{room1_pose}"/>
+                <Action ID="RotateInPlace" name="RotateAtRoom1" rotation_angle="-6.28"/>
+            </Sequence>
+            
+            <!-- Room 2: Navigate then Rotate -->
+            <Sequence name="Room2Sequence">
+                <Action ID="NavigateToPose" name="GoToRoom2" target_pose="{room2_pose}"/>
+                <Action ID="RotateInPlace" name="RotateAtRoom2" rotation_angle="-6.28"/>
+            </Sequence>
+            
+            <!-- Room 3: Navigate then Rotate -->
+            <Sequence name="Room3Sequence">
+                <Action ID="NavigateToPose" name="GoToRoom3" target_pose="{room3_pose}"/>
+                <Action ID="RotateInPlace" name="RotateAtRoom3" rotation_angle="-6.28"/>
+            </Sequence>
+        </Sequence>
+    </BehaviorTree>
+</root>

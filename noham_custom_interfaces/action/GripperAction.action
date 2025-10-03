@@ -1,0 +1,7 @@
+# Goal
+string command  # "grasp" or "drop"
+---
+# Result
+bool success
+---
+# Feedback

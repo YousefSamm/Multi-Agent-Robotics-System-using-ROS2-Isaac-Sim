@@ -1,0 +1,6 @@
+spot_behavior_tree:
+  ros__parameters:
+    # Room poses in format: x,y,z,roll,pitch,yaw (meters and radians)
+    room1_pose: "14.1706,-6.96892,0.0,0.0,0.0,0.0"
+    room2_pose: "14.2639,7.78589,0.0,0.0,0.0,-1.53049"
+    room3_pose: "25.3004,0.391258,0.0,0.0,0.0,-3.13383"

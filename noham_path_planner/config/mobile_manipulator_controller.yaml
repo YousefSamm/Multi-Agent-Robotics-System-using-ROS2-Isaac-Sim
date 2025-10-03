@@ -1,0 +1,91 @@
+controller_server:
+  ros__parameters:
+    # controller server parameters
+    controller_frequency: 10.0
+    controller_server_timeout: 5.0
+    controller_server_timeout_scale: 1.0
+    min_x_velocity_threshold: 0.001
+    min_y_velocity_threshold: 0.5
+    min_theta_velocity_threshold: 0.001
+    progress_checker_plugins: ["progress_checker"]
+    goal_checker_plugins: ["goal_checker"]
+    controller_plugins: ["FollowPath"]
+    
+    progress_checker:
+      plugin: "nav2_controller::SimpleProgressChecker"
+      required_movement_radius: 0.3
+      movement_time_allowance: 5.0
+      
+    goal_checker:
+      plugin: "nav2_controller::SimpleGoalChecker"
+      xy_goal_tolerance: 0.25
+      yaw_goal_tolerance: 0.25
+      stateful: True
+      
+    # DWB controller parameters
+    FollowPath:
+      plugin: "dwb_core::DWBLocalPlanner"
+      debug_trajectory_details: True
+      holonomic_robot: False
+      publish_evaluation: True
+      publish_traj_pc: True
+      publish_cost_grid_pc: True
+      
+      # Costmap references - these should match the actual costmap node names
+      global_costmap: global_costmap
+      local_costmap: local_costmap
+      
+      # Frame configuration
+      robot_base_frame: "base_link"
+      global_frame: "map"
+      odom_frame: "odom"
+      transform_tolerance: 0.2
+      
+      # Velocity and acceleration limits (keeping as requested)
+      min_vel_x: -0.6
+      min_vel_y: 0.0
+      max_vel_x: 0.6
+      max_vel_y: 0.0
+      max_vel_theta: 1.0
+      min_speed_xy: -0.6
+      max_speed_xy: 0.6
+      min_speed_theta: -1.0
+      acc_lim_x: 4.0
+      acc_lim_y: 0.0
+      acc_lim_theta: 3.2
+      decel_lim_x: -4.0
+      decel_lim_y: 0.0
+      decel_lim_theta: -3.2
+      
+      # Sampling parameters (optimized to reduce unnecessary waiting)
+      vx_samples: 8
+      vy_samples: 1
+      vtheta_samples: 8
+      sim_time: 1.0
+      linear_granularity: 0.05
+      angular_granularity: 0.025
+      
+      # Goal tolerance and stopping parameters
+      xy_goal_tolerance: 0.25
+      trans_stopped_velocity: 0.25
+      short_circuit_trajectory_evaluation: True
+      limit_vel_cmd_in_traj: False
+      stateful: True
+      
+      # Critics with optimized scales to reduce unnecessary spinning
+      critics: ["RotateToGoal", "Oscillation", "BaseObstacle", "GoalAlign", "PathAlign", "PathDist", "GoalDist"]
+      BaseObstacle.scale: 0.02
+      PathAlign.scale: 24.0
+      GoalAlign.scale: 16.0
+      PathAlign.forward_point_distance: 0.1
+      GoalAlign.forward_point_distance: 0.1
+      PathDist.scale: 24.0
+      GoalDist.scale: 16.0
+      RotateToGoal.scale: 24.0
+      RotateToGoal.slowing_factor: 3.0
+      RotateToGoal.lookahead_time: -1.0
+      
+      # Frame configuration
+      robot_base_frame: "base_link"
+      global_frame: "map"
+      odom_frame: "odom"

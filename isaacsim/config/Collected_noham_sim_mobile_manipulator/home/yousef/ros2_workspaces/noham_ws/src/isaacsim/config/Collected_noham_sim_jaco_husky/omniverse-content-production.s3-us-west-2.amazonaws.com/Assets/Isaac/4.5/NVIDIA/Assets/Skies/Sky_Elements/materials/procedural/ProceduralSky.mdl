@@ -1,0 +1,3714 @@
+
+mdl 1.4;
+
+import df::*;
+import base::*;
+import math::*;
+import state::*;
+import anno::*;
+import tex::*;
+
+float2 r2d(float2 x,float a){a*=math::acos(-1)*2;return float2(math::cos(a)*x.x+math::sin(a)*x.y,math::cos(a)*x.y-math::sin(a)*x.x);}
+float2 XYZtoUV(float3 p){p=math::normalize(p);
+    return float2(math::atan2(p.x,-p.z)/math::acos(-1)*0.5+0.5,math::asin(-p.y)/math::acos(-1)+0.5);
+}
+float2 XYZtoLatLong(float3 pos){
+    float3 p=math::normalize(pos);
+    // p=math::normalize(p/(1.01+float3(1,0,1)*p.y));
+    return float2(math::atan2(-p.z,-p.x)/math::acos(-1)*0.5+0.5,math::asin(p.y)/math::acos(-1)+0.5);
+}
+float3 rY(float3 p,float a){
+    float2 v=r2d(float2(p.x,p.z),a);
+    return float3(v.x,p.y,v.y);
+}
+float3 rX(float3 p,float a){
+    float2 v=r2d(float2(p.y,p.z),a);
+    return float3(p.x,v.x,v.y);
+}
+float3 rZ(float3 p,float a){
+    float2 v=r2d(float2(p.x,p.y),a);
+    return float3(v.x,v.y,p.z);
+}
+float3 UVtoXYZ(float2 uv){
+    float3 p=float3(0,0,1);
+    p=rX(p,0.25*(1-uv.y));
+    p=rY(p,-uv.x);
+    return p;
+}
+
+float saturation(color rgb)
+{
+    float max = math::max_value(rgb);
+    return (max != 0.0f) ? (1.0f - math::min_value(rgb)/max) : 0.0f;
+}
+
+float hue(float3 rgb)
+{
+    float max = math::max_value(rgb);
+    float min = math::min_value(rgb);
+    float range = max - min;
+    float inv_range = 1.0f/range;
+
+    float hue = (range != 0.0f) ?
+        (1.0f/6.0f) * (                                     // 60.0/360.0
+        (max == rgb.x) ? ((rgb.y-rgb.z)*inv_range)          // R is max
+        : (max == rgb.y) ? (2.0f + (rgb.z-rgb.x)*inv_range) // G is max
+        : (4.0f + (rgb.x-rgb.y)*inv_range)                  // B is max
+        )
+
+        : 0.0f;                                             // hue is undefined (assume 0)
+
+    return (hue >= 0.0f) ? hue : (hue + 1.0f);
+}
+
+float3 hsv_to_rgb(float3 hsv)
+{
+    // from "Color Imaging, Fundamentals and Applications", Reinhard et al., p. 442
+
+    // A hue of 1.0 is questionably valid, and needs to be interpreted as 0.0f
+    float h_prime = (hsv.x != 1.0f) ? hsv.x * 6.0f : 0.0f; // H * 360.0/60.0
+    float h_floor = math::floor(h_prime);
+    float f = h_prime - h_floor;
+    float zy = hsv.z*hsv.y;
+    float a = hsv.z - zy;
+    float b = hsv.z - zy*f;
+    float c = a + zy*f;
+
+    switch(int(h_floor))
+    {
+    default:
+
+        // fall through...
+    case 0:
+        return float3(hsv.z, c, a);
+    case 1:
+        return float3(b, hsv.z, a);
+    case 2:
+        return float3(a, hsv.z, c);
+    case 3:
+        return float3(a, b, hsv.z);
+    case 4:
+        return float3(c, a, hsv.z);
+    case 5:
+        return float3(hsv.z, a, b);
+    }
+}
+float3 rgb_to_hsv(float3 rgb)
+{
+    float h=hue(rgb);
+    float s=saturation(color(rgb));
+    float v=math::max(rgb.x,math::max(rgb.y,rgb.z));
+    return float3(h,s,v);
+}
+
+color sat_tweak(color tint,float saturation){
+    float3 cv=float3(tint);
+    float3 hsv=rgb_to_hsv(cv);
+    hsv.y=hsv.y/(1.000001-hsv.y);
+
+    hsv.y*=saturation;
+
+    hsv.y=hsv.y/(1+hsv.y);
+
+    float3 rgb=hsv_to_rgb(hsv);
+    // return tint;
+    return color(rgb);
+}
+float linstep(float a, float b, float x){
+    return math::saturate((x-a)/(b-a));
+}
+float lmap(float a, float b, float x){
+    return (x-a)/(b-a);
+}
+float sigm(float xx){float x=math::clamp(xx,-40.0,40.0);return math::exp(x)/(math::exp(x)+1);}
+float4 sigm4(float4 xx){float4 x=math::clamp(xx,float4(-40.0),float4(40.0));return math::exp(x)/(math::exp(x)+float4(1));}
+
+float expc(float x,float w=1){
+    return w/(math::exp((0.5-x)*w)-math::exp(-(0.5+x)*w));
+}
+float3 expc3(float3 x,float3 w=1){
+    float3 ww=math::min(w,float3(1000000));
+    // float3 ww=w;
+    return ww/(math::exp((float3(0.5)-x)*ww)-math::exp(-(float3(0.5)+x)*ww));
+}
+color expcol(color x,color w=1){
+    float3 ww=math::min(w,color(1000000));
+    // float3 ww=w;
+    return ww/(math::exp((color(0.5)-x)*ww)-math::exp(-(color(0.5)+x)*ww));
+}
+float3 xyz2dir(
+               float3 in_main,
+               float x,
+               float y,
+               float z)
+{
+    float3 u;
+    float3 v;
+
+
+
+    float3 omain = in_main;
+
+    if (math::abs(omain.x) < math::abs(omain.y)) {
+        // u = n x x_axis
+        u = float3( 0.0,-omain.z, omain.y);
+    } else {
+        // u = n x y_axis
+        u = float3( omain.z,0.0,-omain.x);
+    }
+
+
+
+
+    // degenerate transform
+    if (math::length(u) == 0.0) {
+        if (math::abs(in_main.x) < math::abs(in_main.y)) {
+           u = float3( 0.0,-in_main.z,in_main.y);
+        } else {
+           u = float3( in_main.z, 0.0, -in_main.x);
+        }
+    }
+    u = math::normalize(u);
+    v = math::cross(in_main, u);
+    return  x * u + y * v + z * in_main;
+}
+
+float2 mi_lib_square_to_disk(
+    float inout_r,
+    float inout_phi,
+    float in_x,
+    float in_y)
+{
+    // map to [-1, 1] x [-1, 1]
+    float local_x = 2 * in_x - 1;
+    float local_y = 2 * in_y - 1;
+    // pathological: avoid 0.0/0.0
+    if (local_x == 0.0 && local_y == 0.0) {
+        inout_phi = 0.0;
+        inout_r = 0.0;
+    } else {
+        if (local_x > - local_y) {
+            if (local_x > local_y) {
+                inout_r = local_x;
+                inout_phi = (math::PI / 4.0) * (1.0 + local_y / local_x);
+            } else {
+                inout_r = local_y;
+                inout_phi = (math::PI / 4.0) * (3.0 - local_x / local_y);
+            }
+        } else {
+            if (local_x < local_y) {
+                inout_r = -local_x;
+                inout_phi = (math::PI / 4.0) * (5.0 + local_y / local_x);
+            } else {
+                inout_r = -local_y;
+                inout_phi = (math::PI / 4.0) * (7.0 - local_x / local_y);
+            }
+        }
+    }
+    return float2(inout_r,inout_phi);
+}
+
+float3 mi_reflection_dir_diffuse_x(
+    float3 in_normal,
+    float2 in_sample)
+{
+
+    float2 r_phi = mi_lib_square_to_disk(0, 0, in_sample.x, in_sample.y);
+    float x = r_phi.x * math::cos(r_phi.y);
+    float y = r_phi.x * math::sin(r_phi.y);
+    // compute the z component by "lifting" the point onto the unit
+    // hemisphere
+    float z2 = 1.0 - x * x - y * y;
+    float z;
+    if (z2 > 0.0) {
+        z = math::sqrt(z2);
+    } else {
+        z = 0.0;
+    }
+
+    return xyz2dir(in_normal, x, y, z);
+}
+
+
+color calc_sun_color(float3 sun_dir, float turbidity)
+{
+    color sun_color = color(0.0);
+    color ko = color(12.0, 8.5, 0.9);
+    color wavelength = color(0.610, 0.550, 0.470);
+    color solRad = color(1.0   * 127500 / 0.9878,
+                         0.992 * 127500 / 0.9878,
+                         0.911 * 127500 / 0.9878);
+    if (sun_dir.z > 0.0) {
+        float m = (1.0 / (sun_dir.z + 0.15 *
+                   math::pow(93.885 - math::acos(sun_dir.z) * 180 / math::PI, -1.253)));
+        float beta = 0.04608 * turbidity - 0.04586;
+        float alpha = 1.3;
+        color ta, to, tr;
+        // aerosol (water + dust) attenuation
+        ta = math::exp(-m * beta * math::pow(wavelength, -alpha));
+        // ozone absorption
+        float l = 0.0035;
+        to = math::exp(-m * ko * l);
+        // Rayleigh scattering
+        tr = math::exp(-m * 0.008735 * math::pow(wavelength, -4.08));
+        // result
+        sun_color = tr * ta * to * solRad;
+    }
+    return sun_color;
+}
+
+float3 sky_color_xyz(
+    float3 in_dir,
+    float3 in_sun_pos,
+    float in_turbidity, float in_luminance,
+    float gg=1.0)
+{
+    float3 xyz;
+    float A, B, C, D, E;
+    float cos_gamma = math::dot(in_sun_pos, in_dir);
+    // if (cos_gamma > 1.0) {
+    //     cos_gamma = 2.0 - cos_gamma;
+    // }
+    if (cos_gamma < 0.0) {
+        cos_gamma = 0.0;
+    }
+    if (cos_gamma > 1.0) {
+        cos_gamma = 2.0 - cos_gamma;
+    }
+    // cos_gamma=gg==0?cos_gamma:gg;
+    cos_gamma*=gg;
+    float gamma = math::acos(cos_gamma);
+    float cos_theta = in_dir.z;
+    float cos_theta_sun = in_sun_pos.z;
+    float theta_sun = math::acos(cos_theta_sun);
+    float t2  = in_turbidity * in_turbidity;
+    float ts2 = theta_sun * theta_sun;
+    float ts3 = ts2 * theta_sun;
+    // determine x and y at zenith
+    float zenith_x = ((+0.001650*ts3 - 0.003742*ts2 +
+                       0.002088*theta_sun + 0) * t2 +
+                      (-0.029028*ts3 + 0.063773*ts2 -
+                       0.032020*theta_sun + 0.003948) * in_turbidity +
+                      (+0.116936*ts3 - 0.211960*ts2 +
+                       0.060523*theta_sun + 0.258852));
+    float zenith_y = ((+0.002759*ts3 - 0.006105*ts2 +
+                        0.003162*theta_sun + 0) * t2 +
+                      (-0.042149*ts3 + 0.089701*ts2 -
+                       0.041536*theta_sun + 0.005158) * in_turbidity +
+                      (+0.153467*ts3 - 0.267568*ts2 +
+                       0.066698*theta_sun + 0.266881));
+    xyz.y = in_luminance;
+    // TODO: Preetham/Utah
+
+    A = -0.019257 * in_turbidity  - (0.29 - math::pow(cos_theta_sun, 0.5) * 0.09);
+    // use flags (see above)
+    B = -0.066513 * in_turbidity  + 0.000818;
+    C = -0.000417 * in_turbidity  + 0.212479;
+    D = -0.064097 * in_turbidity  - 0.898875;
+    E = -0.003251 * in_turbidity  + 0.045178;
+    float x = (((1 + A * math::exp(B/cos_theta)) * (1 + C * math::exp(D * gamma) +
+                                              E * cos_gamma * cos_gamma)) /
+               ((1 + A * math::exp(B/1.0)) * (1 + C * math::exp(D * theta_sun) +
+                                        E * cos_theta_sun * cos_theta_sun)));
+    A = -0.016698 * in_turbidity  - 0.260787;
+    B = -0.094958 * in_turbidity  + 0.009213;
+    C = -0.007928 * in_turbidity  + 0.210230;
+    D = -0.044050 * in_turbidity  - 1.653694;
+    E = -0.010922 * in_turbidity  + 0.052919;
+    float y = (((1 + A * math::exp(B/cos_theta)) * (1 + C * math::exp(D * gamma) +
+                                              E * cos_gamma * cos_gamma)) /
+               ((1 + A * math::exp(B/1.0)) * (1 + C * math::exp(D * theta_sun) +
+                                        E * cos_theta_sun * cos_theta_sun)));
+    float local_saturation = 1.0;
+    x = zenith_x * ((x * local_saturation) + (1.0 - local_saturation));
+    y = zenith_y * ((y * local_saturation) + (1.0 - local_saturation));
+    // convert chromaticities x and y to CIE
+    xyz.x = (x / y) * xyz.y;
+    xyz.z = ((1.0 - x - y) / y) * xyz.y;
+    return xyz;
+}
+
+float sky_luminance(
+    float3 in_dir,
+    float3 in_sun_pos,
+    float in_turbidity,
+    float gg=1.0)
+{
+    float cos_gamma = math::dot(in_sun_pos, in_dir);
+    if (cos_gamma < 0.0) {
+        cos_gamma = 0.0;
+    }
+    if (cos_gamma > 1.0) {
+        cos_gamma = 2.0 - cos_gamma;
+    }
+    // cos_gamma=math::pow(cos_gamma,gg);
+    // cos_gamma=gg==0?cos_gamma:gg;
+    cos_gamma*=gg;
+    float gamma = math::acos(cos_gamma);
+    float cos_theta = in_dir.z;
+    float cos_theta_sun = in_sun_pos.z;
+    float theta_sun = math::acos(cos_theta_sun);
+
+    float A =  0.178721 * in_turbidity  - 1.463037;
+    float B = -0.355402 * in_turbidity  + 0.427494;
+    float C = -0.022669 * in_turbidity  + 5.325056;
+    float D =  0.120647 * in_turbidity  - 2.577052;
+    float E = -0.066967 * in_turbidity  + 0.370275;
+
+    float Y = (((1 + A * math::exp(B/cos_theta)) * (1 + C * math::exp(D * gamma) +
+                                              E * cos_gamma * cos_gamma)) /
+               ((1 + A * math::exp(B/1.0)) * (1 + C * math::exp(D * theta_sun) +
+                                        E * cos_theta_sun * cos_theta_sun)));
+    return Y;
+}
+
+color calc_env_color(
+    float3 in_sun_dir,
+    float3 in_dir,
+    float in_turbidity,
+    float gg=1.0)
+{
+    // start with absolute value of zenith luminance in K cd/m2
+    float theta_sun = math::acos(in_sun_dir.z);
+    float chi = (4.0 / 9.0 - in_turbidity / 120.0) * (math::PI - 2 * theta_sun);
+    float luminance = 1000.0 * ((4.0453 * in_turbidity - 4.9710) * math::tan(chi) -
+                       0.2155 * in_turbidity + 2.4192);
+    luminance *= sky_luminance(in_dir, in_sun_dir, in_turbidity,gg);
+    // calculate the sky color - this uses 2 matrices (for 'x' and for 'y')
+    float3 XYZ = sky_color_xyz(in_dir, in_sun_dir, in_turbidity, luminance,gg);
+    // use result
+    color env_color = color( 3.241 * XYZ.x - 1.537 * XYZ.y - 0.499 * XYZ.z,
+                -0.969 * XYZ.x + 1.876 * XYZ.y + 0.042 * XYZ.z,
+                0.056 * XYZ.x - 0.204 * XYZ.y + 1.057 * XYZ.z);
+    env_color *= math::PI;
+    return env_color;
+}
+
+color calc_irrad(
+   float3 in_data_sun_dir,
+   float in_data_sun_dir_haze)
+{
+    color colaccu = color(0.0);
+    float3 nuState_normal = float3(0.0, 0.0, 1.0);
+
+
+
+    float3 sun_dir = in_data_sun_dir;
+
+    color work = color( 0.0);
+    for (float u=1./10.;u<1.;u+=1./5.) {
+        for(float v=1./10.;v<1.;v+=1./5.) {
+            float3 diff;
+            diff = mi_reflection_dir_diffuse_x( nuState_normal, float2(u,v));
+            work = calc_env_color(sun_dir, diff, in_data_sun_dir_haze);
+            colaccu += work;
+        }
+    }
+    colaccu /= 25.0;
+    return colaccu;
+}
+
+float tweak_saturation(float inout_saturation, float in_haze)
+{
+    float lowsat = math::pow(inout_saturation, 3.0);
+    if (inout_saturation <= 1.0) {
+        float local_haze = in_haze;
+        local_haze -= 2.0;
+        local_haze /= 15.0;
+        if (local_haze < 0.0) local_haze = 0.0;
+        if (local_haze > 1.0) local_haze = 1.0;
+        local_haze = math::pow(local_haze, 3.0);
+        return ((inout_saturation * (1.0 - local_haze)) +
+                lowsat * local_haze);
+    }
+    // return 1.;
+    return inout_saturation;
+}
+
+float3 arch_vectortweak(
+    float3 dir,
+    bool y_is_up,
+    float horiz_height)
+{
+    float3 out_dir = dir;
+    if (y_is_up) {
+        out_dir = float3(dir.x, dir.z,dir.y);
+    }
+    if (horiz_height != 0) {
+        out_dir.z -= horiz_height;
+        out_dir = math::normalize(out_dir);
+    }
+    return out_dir;
+}
+
+color arch_colortweak(
+    color tint,
+    float saturation,
+    float redness)
+{
+
+    float intensity = math::luminance(tint);
+    color out_tint;
+    // clamp down negatives (should never happen, but ...)
+    if (saturation <= 0.0) {
+        out_tint = color(intensity);
+    } else {
+        out_tint = tint * saturation + intensity * (1.0 - saturation);
+        // boosted saturation can cause negatives
+        if (saturation > 1.0) {
+            float3 rgb_color = float3(tint);
+            if (rgb_color.x < 0.0) rgb_color.x = 0.0;
+            if (rgb_color.y < 0.0) rgb_color.y = 0.0;
+            if (rgb_color.z < 0.0) rgb_color.z = 0.0;
+            tint = color(rgb_color);
+        }
+    }
+    // redness
+    out_tint *= color(1.0 + redness,1., 1.0 - redness);
+    // color cr=math::exp2(color(redness,0,- redness));
+    // out_tint *= cr/(color(1)+cr);
+    return math::max(color(0),out_tint);
+}
+
+float2 calc_physical_scale(
+    float sun_disk_scale,
+    float sun_glow_intensity,
+    float sun_disk_intensity)
+{
+    float sun_angular_radius = 0.00465f;
+
+    /* This is the angular radius of the sun in radians, scaled according to the user's wishes
+    and further scaled by 10 which is the radius of the glow */
+    float sun_disk_radius = sun_angular_radius * sun_disk_scale;
+    float sun_glow_radius = sun_disk_radius * 10.0f;
+
+    /* The contribution of the sun disk & glow is ultimately driven by these expressions:
+    miScalar factor = (1.0f - sun_angle / sun_radius) * 10.0f;
+    factor = (miScalar) pow(factor / 10.0, 3.0) * 2.0f * glow_intensity +   // SUN GLOW
+    smoothstep(8.5f, 9.5f + (haze / 50.0f), factor) * 100.0f * disk_int;     // SUN DISK
+    color.r += data->sun_color.r * factor;
+    color.g += data->sun_color.g * factor;
+    color.b += data->sun_color.b * factor;
+
+    Our goal is:
+    a. the integration of factor==disk_int,
+        such that we get a physically-scaled sun for disk_int=1
+    b. the glow intensity is capped at 50% of the total
+        (50% is an arbitrary number, we have to cap somewhere)
+    ==> To achieve this goal, we simply calculate the integrals of
+    the sun GLOW & DISK functions,
+    calculate their ratio and scale them accordingly.
+    */
+
+    /* We calculate the integral of the glow intensity function */
+    float glow_func_integral;
+    {
+        /* Calculate the integral of the glow function over its, i.e.:
+        integral[x=0 to x=sun_glow_radius] (pow(factor / 10.0, 3.0) *
+                2.0f * glow_intensity * sin(x) dx)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        With x being "sun_angle". */
+        // flattened code:
+        glow_func_integral = sun_glow_intensity * ( (4.*math::PI) - (24.*math::PI)/(sun_glow_radius*sun_glow_radius) + (24.*math::PI)*math::sin(sun_glow_radius)/(sun_glow_radius*sun_glow_radius*sun_glow_radius) );
+    }
+
+    /* Calculate the target sun disk intensity integral (the value towards which
+    we must scale to attain a physically-scaled sun intensity */
+    float target_sundisk_integral = sun_disk_intensity * math::PI;
+
+    /* Subtract the glow integral from the target disk integral,
+    limiting the glow power to 50% of the sun disk */
+    float sky_sunglow_scale = 1.0;
+    float max_glow_integral = 0.5f * target_sundisk_integral;
+    if(glow_func_integral > max_glow_integral)
+    {
+        sky_sunglow_scale *= max_glow_integral / glow_func_integral;
+        target_sundisk_integral -= max_glow_integral;
+    }
+    else
+    {
+        target_sundisk_integral -= glow_func_integral;
+    }
+
+    float sundisk_area = 2*math::PI*(1 - math::cos(sun_disk_radius));
+    float target_sundisk_intensity = target_sundisk_integral / sundisk_area;
+
+    /* Calculate the actual sun disk intensity, before scaling is applied */
+    /* The integral of the sun disk intensity function should be taken into
+    account, however the average value of the sun disk smoothing function
+    is very close to 1 though probably not exactly 1), and I've so far failed
+    at calculating the integral in a way where I can match the intensity of
+    the mia_physicalsun shader. The results are actually closer if I assume
+    the sun disk intensity has an average value of 1, and only deviate slightly
+    with very large sun disk radii. I can't quite explain this, so I'll
+    accept this "approximation" which apparently yields very acceptable
+    results.
+    So, TODO: re-calculate the integral for that sun smooth function! */
+    float actual_sundisk_integral = 1.0f * sundisk_area;
+    /* approximation! needs to be re-calculated from the integral of
+    the function */
+    float actual_sundisk_intensity =  sun_disk_intensity * 100.0f *
+        actual_sundisk_integral / sundisk_area;/* average value of the */
+
+    /* Apply the proper scaling to get to the target value */
+    return float2(
+        (target_sundisk_intensity == 0.0) ? 0.0 : target_sundisk_intensity / actual_sundisk_intensity,
+        sky_sunglow_scale);
+}
+
+float night_brightness_adjustment(
+    float3 sun_dir)
+{
+    float lmt = 0.30901699437494742410229341718282;
+    if (sun_dir.z <= -lmt)
+        return 0.0;
+    float factor = (sun_dir.z + lmt) / lmt;
+    factor *= factor;
+    factor *= factor;
+    return factor;
+}
+
+
+color sun_and_sky_mod(
+    float3 Vector = float3(0),
+    uniform bool on = true [[ anno::description("") ]],
+    float  multiplier = 0.025 [[ anno::description("") ]],
+    uniform color rgb_unit_conversion = color(0.000666667) [[ anno::description("") ]],
+    float  haze = 0.5 [[ anno::description("") ]],
+    float  redblueshift = 0.0 [[ anno::description("") ]],
+    uniform float  saturation = 0.5 [[ anno::description("") ]],
+    float  horizon_height = 0.001 [[ anno::description("") ]],
+    float  horizon_blur = 0.1 [[ anno::description("") ]],
+    color  ground_color = color(0.4, 0.4, 0.4) [[ anno::description("") ]],
+    color  night_color = color(0.0, 0.0, 0.0) [[ anno::description("") ]],
+    float3 sun_direction = float3(0.0, 0.229271, 0.418882) [[ anno::description("") ]],
+    float  sun_disk_intensity = 0.01 [[ anno::description("") ]],
+    uniform float  sun_disk_scale = 0.5 [[ anno::description("") ]],
+    uniform float  sun_glow_intensity = 1.0 [[ anno::description("") ]],
+    uniform bool y_is_up = true [[ anno::description("") ]],
+    // uniform int flags = 0 [[ anno::unused() ]],
+    uniform bool physically_scaled_sun = true [[ anno::description("") ]],
+    float HorizonGlow=0,float HorizonGlowShape=10
+)
+[[
+    anno::description("Sun and sky model environment. (For documentation of the parameters, please see the official documentation of the matching mental ray shader.)"),
+    anno::noinline()
+]]
+{
+    color result = color(0.0);
+
+    float factor = 1.0;
+    float night_factor = 1.0;
+    color out_color = color(0.0);
+    color rgb_scale = rgb_unit_conversion;
+    // float3 dir = state::transform_vector(state::coordinate_internal, state::coordinate_world, state::direction());
+    float3 dir= Vector;
+    float horiz_height = horizon_height / 10.0; // done in *_init
+    dir = arch_vectortweak(dir, y_is_up, horiz_height);
+    // haze
+    float local_haze = 2.0 + haze;
+    if (local_haze < 2.0) {
+        local_haze = 2.0;
+    }
+    float local_saturation = tweak_saturation(saturation, local_haze);
+    // local_saturation=1.0;
+    if (math::luminance(rgb_scale) < 0.0) {
+        rgb_scale = color( 1.0 / 80000.0);
+    }
+    rgb_scale *= multiplier;
+    if (multiplier <= 0.0 || (!on)) {
+        return color(0.);
+        // return texture_return(color(0.),1.);
+    }
+    // downness
+    float downness = dir.z;
+    float3 real_dir = dir;
+    // only calc for above-the-horizon
+    if (dir.z < 0.001) {
+        dir.z = 0.001;
+        dir = math::normalize(dir);
+    }
+    // sun_dir
+    float3 sun_dir = sun_direction;
+    sun_dir = math::normalize(sun_dir);
+    sun_dir = arch_vectortweak(sun_dir, y_is_up, horiz_height);
+    float3 real_sun_dir = sun_dir;
+    if (sun_dir.z < 0.001) {
+        if (sun_dir.z < 0.0)  {
+            factor = night_brightness_adjustment(sun_dir);
+        }
+        sun_dir.z = 0.001;
+        sun_dir = math::normalize(sun_dir);
+    }
+    color tint;
+    if (factor > 0.0) {
+        tint = calc_env_color(sun_dir, dir, local_haze);
+        if (factor < 1.0) {
+            tint *= factor;
+        }
+    } else {
+        tint = color(0.);
+    }
+    color data_sun_color = calc_sun_color(sun_dir, downness>0?local_haze:2.0);
+    if (sun_disk_intensity > 0.0 && sun_disk_scale > 0.0) {
+        float sun_angle = math::acos(math::dot(real_dir, real_sun_dir));
+        float sun_radius = 0.00465 * sun_disk_scale * 10.0;
+        if (sun_angle < sun_radius) {
+            /* Calculate the scales necessary to get a sun with physical intensity */
+            /* default values */
+            float sky_sundisk_scale = 1.0f;
+            float sky_sunglow_scale = 1.0f;
+            if (physically_scaled_sun) {
+                float2 return_value = calc_physical_scale(sun_disk_scale, sun_glow_intensity, sun_disk_intensity);
+                sky_sundisk_scale = return_value.x;
+                sky_sunglow_scale = return_value.y;
+            }
+
+            float sun_factor = (1.0 - sun_angle / sun_radius) * 10.0;
+
+            sun_factor = (math::pow(sun_factor / 10.0, 3.0) * 2.0 *
+                    sun_glow_intensity *  sky_sunglow_scale +
+                    math::smoothstep(8.5, 9.5 +
+                   (local_haze / 50.0), sun_factor) *
+                    100.0 * sun_disk_intensity * sky_sundisk_scale);
+            tint += data_sun_color * sun_factor*100;
+        }
+    }
+    // set the output
+    out_color = tint * rgb_scale;
+    if (downness <= 0.0) {
+        color irrad = color(0.0);
+        color downcolor = ground_color;
+
+        // irrad = calc_irrad(sun_dir, 2.0);
+        downcolor *= (irrad + data_sun_color * sun_dir.z) * rgb_scale;
+        // apply 1+sun_dir.z night factor to downcolor
+        // otherwise at sun_dir.z==-1 (midnight) we get a brightly
+        // illuminated ground plane!
+        if (factor < 1) {
+          downcolor *= factor;
+        }
+        float hor_blur = horizon_blur / 10.0;
+        if (hor_blur > 0.0) {
+            float dness = -downness;
+            dness /= hor_blur;
+            if (dness > 1.0) {
+                dness = 1.0;
+            }
+            dness = math::smoothstep(0.0, 1.0, dness);
+            out_color = out_color * (1.0 - dness) + downcolor * dness;
+            night_factor = 1.0 - dness;
+        } else  {
+            out_color = downcolor;
+            night_factor = 0.0;
+        }
+    }
+
+    out_color = arch_colortweak(out_color, local_saturation, redblueshift);
+    result = out_color;
+    if (night_factor > 0.0) {
+        color night = night_color;
+        night *= night_factor;
+        /*rgb code*/
+        float3 rgb_result = float3(result);
+        float3 rgb_night = float3(night);
+        if (rgb_result.x < rgb_night.x) rgb_result.x = rgb_night.x;
+        if (rgb_result.y < rgb_night.y) rgb_result.y = rgb_night.y;
+        if (rgb_result.z < rgb_night.z) rgb_result.z = rgb_night.z;
+        result = color(rgb_result);
+    }
+    result *= math::PI;
+    result*=math::exp(HorizonGlow*(math::pow(1.0-math::abs(math::normalize(Vector).y),math::exp2(HorizonGlowShape*0.1))));
+    return result;
+    // return texture_return(result, 1.);
+}
+
+
+
+//from base flow noise function
+
+int permute_flow2(int x)
+{
+    //x %= 289; // correct, but doesn't matter in practice
+    return (x*x*34 + x) % 289;
+}
+
+// gradient mapping + extra rotation
+float2 grad_flow2(int p, float rot)
+{
+    float u = float(p)*(1.0/41.0) + rot; // [0..7] + rot //!! (a bit) magic
+    // map from line to diamond -> shift maps to rotation
+    u = (u-math::floor(u))*4.0f - 2.0f;
+    return float2(math::abs(u)-1.0f, math::abs(math::abs(u+1.0f)-2.0f)-1.0f);
+}
+
+float flow_noise(float2 p, float rot)
+{
+    float  SQRT3 = 1.7320508075688772935274463415059;
+
+
+    float2 pi = math::floor(p + (p.x+p.y)*(SQRT3/2.0-0.5));
+
+
+    float2 v0 = p - pi + (pi.x+pi.y)*(0.5-SQRT3/6.0);
+
+    // offsets for other 2 corners
+    float2 v1 = v0 + ((v0.x < v0.y) ? float2((0.5-SQRT3/6.0), (-0.5-SQRT3/6.0)) : float2((-0.5-SQRT3/6.0), (0.5-SQRT3/6.0)));
+    float2 v2 = v0 + (-1.0/SQRT3);
+
+    // calc circularly symmetric part of each noise wiggle
+    float3 t = math::max(float3(0.5f-math::dot(v0,v0), 0.5f-math::dot(v1,v1), 0.5f-math::dot(v2,v2)), float3(0.0f,0.0f,0.0f));
+
+    int2 pii = int2(int(pi.x), int(pi.y));
+    int tmpp0 = permute_flow2(pii.x) + pii.y;
+    int tmpp2 = permute_flow2(pii.x+1) + pii.y;
+    float2 g0 = grad_flow2(permute_flow2(tmpp0),                                                     rot);
+    float g0v0 = math::dot(g0,v0);
+    float2 g1 = grad_flow2(permute_flow2(((v0.x < v0.y) ? tmpp0 : tmpp2) + ((v0.x < v0.y) ? 1 : 0)), rot);
+    float g1v1 = math::dot(g1,v1);
+    float2 g2 = grad_flow2(permute_flow2(tmpp2+1),                                                   rot);
+
+    // compute noise contributions from each corner
+    float3 gv = float3(g0v0, g1v1, math::dot(g2,v2)); // ramp
+    float3 t2 = t*t;
+    float3 t4 = t2*t2;
+    // add contributions from all 3 corners
+    float result = 40.0f*(t4.x*gv.x + t4.y*gv.y + t4.z*gv.z); // circular kernel * ramp
+
+    return result;
+}
+
+float summed_flow_noise2(
+    float2 pos,
+    float time,
+    int iterations,
+    bool abs_noise,
+    float weight_factor = 0.5f,
+    float pos_factor = 2.0f,
+    float u_progressive_scale = 1.0f,
+    float v_progressive_offset = 0.0f)
+{
+    float sum = 0.0f;
+    float weight = 1.0f;
+    float3 p = float3(pos.x,pos.y,time);
+    // iteration_offset is used to avoid creating concentric artifacts around the origin from having all
+    // wave sizes originate from the same origin.
+    float iteration_offset = 0.0f;
+    float inv_iterations = 1.0f / float(iterations - 1);
+    for(int i = 0; i < iterations; ++i, iteration_offset += 7.0f)
+    {
+        float lerp_pos = (iterations > 1) ? float(i)*inv_iterations : 1.0f;
+        float n = flow_noise(
+            float2(
+             p.x * (1.0f-lerp_pos + lerp_pos*u_progressive_scale),
+             p.y + lerp_pos*v_progressive_offset + iteration_offset),
+            p.z);
+        // sum += weight*(abs_noise ? math::abs(n) : n);
+        sum += weight*(abs_noise ? (math::abs(n)) : n);
+        
+        p   *= pos_factor;
+        weight *= weight_factor;
+    }
+
+    return sum;
+}
+
+
+float summed_flow_noise4(
+    float2 pos,
+    float time,
+    int iterations,
+    bool abs_noise,
+    float weight_factor = 0.5f,
+    float pos_factor = 2.0f,
+    float u_progressive_scale = 1.0f,
+    float v_progressive_offset = 0.0f,
+    float morph_factor = 0.65f)
+{
+    float sum = 0.0f;
+    float weight = 1.0f;
+    float3 p = float3(pos.x,pos.y,time);
+    // iteration_offset is used to avoid creating concentric artifacts around the origin from having all
+    // wave sizes originate from the same origin.
+    float iteration_offset = 0.0f;
+    float inv_iterations = 1.0f / float(iterations - 1);
+    for(int i = 0; i < iterations; ++i, iteration_offset += 7.0f)
+    {
+        // float lerp_pos = (iterations > 1) ? float(i)*inv_iterations : 1.0f;
+        float lerp_pos = math::exp2(math::log2(pos_factor)*(morph_factor)*math::exp2(math::abs(morph_factor))*float(i))-1;
+        
+        float n = flow_noise(
+            float2(
+             p.x * (1.0f-lerp_pos + lerp_pos*u_progressive_scale),
+             p.y + lerp_pos*v_progressive_offset + iteration_offset),
+            p.z);
+        // sum += weight*(abs_noise ? math::abs(n) : n);
+        sum += weight*(abs_noise ? (math::abs(n)*1.5-0.25) : n);
+        
+        p   *= pos_factor;
+        weight *= weight_factor;
+    }
+
+    return sum;
+}
+
+float summed_flow_noise_lod(
+    float2 pos,
+    float time,
+    int iterations,
+    bool abs_noise,
+    float lod=0,
+    float weight_factor = 0.5f,
+    float pos_factor = 2.0f,
+    float u_progressive_scale = 1.0f,
+    float v_progressive_offset = 0.0f,
+    float morph_factor = 0.65f)
+{
+    float sum = 0.0f;
+    float weight = 1.0f;
+    float3 p = float3(pos.x,pos.y,time);
+    // iteration_offset is used to avoid creating concentric artifacts around the origin from having all
+    // wave sizes originate from the same origin.
+    float iteration_offset = 0.0f;
+    float inv_iterations = 1.0f / float(iterations - 1);
+    p*=math::exp2(math::floor(lod)*math::log2(pos_factor));
+    float lw=math::log2(weight_factor);
+    for(int i = 0; i < iterations; ++i, iteration_offset += 7.0f)
+    {
+        // float lerp_pos = (iterations > 1) ? float(i)*inv_iterations : 1.0f;
+        // float lerp_pos = math::exp2(math::log2(pos_factor)*(morph_factor)*math::exp2(math::abs(morph_factor))*float(i))-1;
+        
+        // float n = flow_noise(
+        //     float2(
+        //      p.x * (1.0f-lerp_pos + lerp_pos*u_progressive_scale),
+        //      p.y + lerp_pos*v_progressive_offset + iteration_offset),
+        //     p.z);
+        // sum += weight*(abs_noise ? abs(n) : n);
+        float n = flow_noise(
+            float2(
+             p.x+time*1*math::exp2((float(i)+math::floor(lod))*1.03),
+             p.y),
+            p.z);
+
+        weight=math::lerp(i==iterations-1?0:math::exp2(float(i)*lw),i==0?0:math::exp2((float(i)-1)*lw),math::frac(lod));
+//      weight=exp2(lerp(i==iterations-1?-10:exp2(-float(i)),i==0?-100:exp2(-float(i)+1),1-frac(lod)));
+    
+        sum += weight*(abs_noise ? (math::abs(n)*1.5-0.25) : n);
+        p   *= pos_factor;
+//        weight *= weight_factor;
+    }
+
+    return sum;
+}
+float summed_flow_noise6(
+        float2 pos,
+        float time=0,
+        int iterations=3,
+        bool abs_noise=false,
+        float weight_factor = 0.5f,
+        float pos_factor = 2.0f,
+        float u_progressive_scale = 1.0f,
+        float v_progressive_offset = 0.0f,
+        float morph_factor = 0.65f,
+        float4 noise_shaper=float4(0)
+    ){
+    float sum = 0.0f;
+    float weight = 1.0f;
+    // float morph_factor2 = 0.695;
+    float3 p = float3(pos.x,pos.y,time);
+
+    float nsp=noise_shaper.y*0.1*0+math::log2(pos_factor)*0;
+    float nsd=noise_shaper.z*0.1+math::log2(pos_factor)*0;
+
+    // iteration_offset is used to avoid creating concentric artifacts around the origin from having all
+    // wave sizes originate from the same origin.
+    float iteration_offset = 0.0f;
+    float inv_iterations = 1.0f / float(iterations - 1);
+    
+    // float3 p0=p*float3(1,1,1);
+    float3 ps=p*float3(1,1,4);
+    for(int i = 0; i < iterations; ++i, iteration_offset += 7.0f)
+    {
+        // float lerp_pos = (iterations > 1) ? float(i)*inv_iterations : 1.0f;
+        float lerp_pos = math::exp2(math::log2(pos_factor)*(morph_factor)*math::exp2(math::abs(morph_factor))*float(i))-1;
+        
+
+        float3 pd=float3(1,1,1)*math::sin(float3(ps.y,ps.z,ps.x)*1.618*math::exp2(float(i)*nsp+.01+noise_shaper.w*0.1)+(float(i)+0.1)*float3(1.618,1,0.618))*math::exp2(-(float(i)*nsd+0.01+noise_shaper.w*0.1-noise_shaper.x*0.1));
+        // pd+=float3(1,1,1)*math::sin(float3(ps.z,ps.x,ps.y)*3*1.618*math::exp2(float(i)*nsp+.01+noise_shaper.w*0.1)+(float(i)+0.1)*float3(1.618,1,0.618))*math::exp2(-(float(i)*nsd+0.01+noise_shaper.w*0.1-noise_shaper.x*0.1+1+noise_shaper.y));
+
+        float3 pn=p+pd*float3(1,1,.25)*math::exp2(0.0+noise_shaper.y*0.1)/(1+0.9*float(i));
+
+        float n = flow_noise(
+            float2(
+             pn.x * (1.0f-lerp_pos + lerp_pos*u_progressive_scale),
+             pn.y + lerp_pos*v_progressive_offset + iteration_offset),
+            pn.z*(i==0?0.01:1));
+        // sum += weight*(abs_noise ? math::abs(n) : n);
+        // sum += weight*(abs_noise ? (math::abs(n)*1.5-0.25) : n);
+        sum += weight*((i<iterations-1) ? (math::abs(n)*1.5-0.25) : n);
+        float ns=float(i)*0.1;
+        ns=ns*noise_shaper.x+ns*ns*noise_shaper.y;
+        ns=0.0;
+        // p+=(pd-p);
+        ps+=pd;
+        // ps  *= pos_factor*math::exp2(ns);
+        p   *= pos_factor*math::exp2(ns);
+
+        //p+=noise_shaper.x*3*float3(1,1,0.13)*math::sin(float3(p.y,p.z,p.x)*1.618*math::exp2(float(i)*noise_shaper.y+1.01)+(float(i)+0.1)*float3(1.618,1,0.618))/math::exp2(float(i)*noise_shaper.z+2.9);
+        // weight *= weight_factor/pos_factor*math::exp2(-ns*noise_shaper.z*0.1);
+        weight *= weight_factor/pos_factor;
+        
+    }
+
+    return sum;
+}
+
+
+float3 SunDirection(float Elevation,float Azimuth){
+    float3 p=float3(1,0,0);
+    p=rZ(p,-Elevation/360);
+    p=rY(p,Azimuth/360);
+
+    return p;
+}
+float3 AmbientDirection(float Elevation,float Azimuth){
+    float3 p=float3(1,0,0);
+    p=rZ(p,-Elevation/360);
+    p=rY(p,Azimuth/360);
+
+    return p;
+}
+float3 GetSunPosition(float Elevation,float Azimuth){
+    float3 p_sun=float3(0,0,1);
+    // p_sun.yz=r2d(p_sun.yz,Elevation/360);
+    p_sun=rX(p_sun,-Elevation/360.0);
+    // p_sun.xz=r2d(p_sun.xz,Azimuth/360);
+    p_sun=rY(p_sun,0.75-Azimuth/360);
+    // float sa=asin(dot(p,p_sun))/acos(-1)+.5;
+    return p_sun;
+}
+
+float3 MoonDirection(
+    float Latitude,
+    float Longitude,
+    float Declination,
+    float SHA,
+    float DayOfYear,
+    float LHA,
+    uniform float AzimuthOffset=0,
+    float MoonDeclination=5.14){
+    float3 p_moon=float3(0,0,1);
+
+    float sha=SHA/360;
+
+    float lha=sha+LHA/360+(sha+DayOfYear)*(365/29.53)/365.0;
+    float dec=Declination/360.0+MoonDeclination/360*math::sin(lha*math::acos(-1)*2);
+
+    color c=color(0);
+    float3 lp=float3(0,1,0);
+    lp=rZ(lp,dec);
+    lp=rX(lp,-lha);
+    lp=rZ(lp,-Latitude/360.0);
+
+    lp=float3(lp.x,lp.y,-lp.z);
+    lp=(AzimuthOffset==0.0)?lp:rY(lp,AzimuthOffset/360.0);
+    return lp;
+}
+
+float intSphere( float3 sp, float3 ro, float3 rd, float tm,float sr){
+    float t=-1;
+    bool  r = false;
+    float3  d = ro - sp;
+    float b = math::dot(rd,d);
+    float c = math::dot(d,d) - sr*sr;
+    t = b*b-c;
+
+    if( t > 0.0 )
+    {
+        t = -b-math::sqrt(t);
+        r = (t > 0.0) && (t < tm);
+        return t;
+    }
+
+    return t;
+}
+
+color DrawMoon(float3 rd, color c_space,uniform color MoonColor,
+    float3 p_sun,float moonsize,
+    float MoonDiskIntensity,
+    // float MoonElevation,
+    // float MoonAzimuth,
+    float Latitude,
+    float Longitude,
+    float Declination,
+    float SHA,
+    float DayOfYear,
+    float LHA,
+    uniform float AzimuthOffset=0,
+    float MoonDeclination=5.14
+    ){
+
+    // base::texture_coordinate_info uvw = base::coordinate_source(base::texture_coordinate_object,0);
+    // float3 p=float3(uvw.position.x,uvw.position.z,uvw.position.y);
+    // p=math::normalize(p);
+    float3 p=float3(rd.x,rd.y,-rd.z);
+    float sha=SHA/360;
+    float lha=sha+LHA/360+(sha+DayOfYear)*(365/29.53)/365.0;
+    float dec=Declination/360.0+MoonDeclination/360*math::sin(lha*math::acos(-1)*2);
+
+    color c=color(0);
+    float3 lp=float3(p.x,p.z,p.y);
+    lp=(AzimuthOffset==0.0)?lp:rZ(lp,AzimuthOffset/360.0);
+    lp=rY(lp,Latitude/360.0);
+    // lp=rX(lp,-SHA/360+LHA/360-DayOfYear/365.0);
+    lp=rX(lp,-lha);
+    lp=rY(lp,-dec);
+    lp=float3(lp.x,-lp.z,lp.y);
+
+    float sd=intSphere(float3(0,-1,0),float3(0),lp,99,moonsize/360.);
+    float3 mp=(lp*sd-float3(0,-1,0))*360/moonsize;
+    float3 n=math::normalize(mp);
+
+    float2 uv=XYZtoUV(float3(n.y,n.x,n.z));
+    float ctex=0.7;
+
+    // c=color(math::frac(n.x),math::frac(n.y),math::frac(n.z));
+    c=color(n.x,n.y,n.z)*0.5+color(0.5);
+    c=color(math::frac(uv.x*24),math::frac(uv.y*24),0);
+    c=color(ctex);
+
+    n=-float3(n.x,-n.y,n.z);
+    n=rZ(n,dec);
+    n=rX(n,-lha);
+    n=rZ(n,-Latitude/360.0);
+
+
+    n=(AzimuthOffset==0.0)?n:rY(n,-AzimuthOffset/360.0);
+    c*=color(math::pow(math::saturate(math::dot(n,p_sun)),0.5))*4.0+0.0015;
+    c*=MoonDiskIntensity;
+    float gd=linstep(0.8,1.0,-lp.y);
+    color glow=color(0.1,0.2,0.3)*0.002*gd/(1.0-gd);
+    // glow=color(0.1,0.2,0.3)*linstep(.0,.001,(-lp.y-1.0+.00005*moonsize*moonsize));
+    // glow=color(0.1,0.2,0.3)*linstep(.0-.000035*moonsize*moonsize,.001,(-lp.y-1.0));
+    gd=linstep(.000205,.00000411,(lp.y+1.0)/moonsize/moonsize);
+    glow=color(0.6,0.7,0.9)*0.001*gd/(1.04-gd);
+    // glow=color(0.1,0.2,0.3)*linstep(.00,.001+.002005*(moonsize*moonsize),(-lp.y-1.0));
+    c+=glow;
+    color mcc=MoonColor*math::exp2(-.1/(p.y+.001))*float(p.y>=0);
+    // c=math::max(c,glow);
+    if(sd<0)return c_space*(p.y>=0)+glow*mcc;
+    c*=mcc;
+    // c*=math::exp2(-.1/(p.y+.001));
+    
+    // c*=MoonColor;
+
+    // c*=(p.y>=0);
+    return c;
+
+}
+
+
+color AtmoFog(color originalColor,color fogColor,
+    float3 eye, float3 point,
+    float CloudAmbientFog=0.1,//density
+    uniform float4 CloudAmbientFogShaper=float4(0)
+    ){
+    //adaptation of https://www.iquilezles.org/www/articles/fog/fog.htm
+    float3 dist=float3(1)*math::length(point-eye);
+    float3 rayDir=math::normalize(point-eye);
+    float3 rayOri=eye;
+
+
+
+    float3 c=math::exp2(float3(1)*CloudAmbientFog*0.1);
+    float3 b=math::exp2(float3(1)*CloudAmbientFogShaper.w*0.1);
+
+    // c*=math::exp2(float3(-1,0,1)*-2.75);
+    b*=math::exp2(-float3(-1,0,1)*CloudAmbientFogShaper.x*0.1);
+    c*=math::exp2(float3(-1,0,1)*CloudAmbientFogShaper.y*0.1);
+    // dist*=math::exp2(float3(-1,0,1)*CloudAmbientFogShaper.w);
+    float3 fc=fogColor;//float3(0.8);
+    // if(length(point)<params.realtimeFog.fogStartDist)fc=float3(1,0,0);
+    float3 fogAmount = c * math::exp(-rayOri.y*b) * (float3(1.0)-math::exp( -dist*rayDir.y*b ))/rayDir.y;
+    // fogAmount=fogAmount/(1+fogAmount);
+    float3 g=float3(2);
+    fogAmount=math::pow(fogAmount,g);
+
+    fogAmount=fogAmount/(1+fogAmount);
+    
+    fogAmount=math::pow(fogAmount,1./g);
+    
+    // return originalColor+color(math::frac(point*.0206));
+    return math::lerp( originalColor, color(fc), math::saturate(fogAmount) );
+}
+
+color GetSunColor(
+    float Elevation,
+    float Altitude=0,
+    float CloudAmbientFog=0.1,
+    uniform float4 CloudAmbientFogShaper=float4(0)
+    ){
+    // color c=math::lerp(color(0.25,0.013,0.0),color(0.5,0.3,0.1),linstep(-0.5,10,Elevation));
+    // c=math::lerp(c,color(1.0,0.98,0.95),linstep(10,20,Elevation));
+    // c=color(1,0.013,0.0);
+    // float3 eye=float3(0,CloudAmbientFogShaper.z+Altitude*0.25,0);
+    // float3 point=float3(500000,0,0);
+    // // point=rZ(point,-Elevation/360.0);
+    // float ek=0.5;
+    // point=rZ(point,-math::max(ek,Elevation)/360.0);
+    // point+=eye;
+    // c=AtmoFog(color(1),color(0.0001),eye,point,CloudAmbientFog+2,CloudAmbientFogShaper);
+    // c*=linstep(-11,ek,Elevation);
+
+    float3 sp=rX(float3(0,-1,0),Elevation/360.0);
+    // sp.z+=-0.01*(Altitude-10.0)*.1;
+    // sp=math::normalize(sp);
+    color c=calc_sun_color(sp,2.0)*.0000025;
+    // c=math::lerp(color(1),color(0,1,0),math::normalize(point-eye).y);
+    return c;
+}
+
+color GetEnvColor(float3 rd,float3 sundir,float local_haze=2.0,float gg=1.0){
+    
+    float3 sun_dir=float3(sundir.x,sundir.z,sundir.y);
+    float3 dir=float3(rd.x,rd.z,rd.y);
+
+    if(dir.z<0)dir.z=math::pow(math::abs(dir.z),1.0);
+    dir=math::normalize(dir);
+    float factor = 1.0;
+    if (sun_dir.z < 0.001) {
+        if (sun_dir.z < 0.0)  {
+            factor = night_brightness_adjustment(sun_dir);
+        }
+        sun_dir.z = 0.001;
+        sun_dir = math::normalize(sun_dir);
+    }
+    color tint;
+    if (factor > 0.0) {
+        tint = calc_env_color(sun_dir, dir, local_haze,gg);
+        if (factor < 1.0) {
+            tint *= factor;
+        }
+    } else {
+        tint = color(0.);
+    }
+
+    color c=0.0001*tint;
+
+    return c;
+}
+
+color GetFogColor(float3 rd,float3 sundir,float3 moondir,bool MoonEnabled,color MoonColor,float Elevation,color amb=color(0.0)){
+    color c=color(1)*math::pow(linstep(-11,2,Elevation),2)+amb;
+    // CloudAmbientFogTint*color(1)*math::pow(linstep(-13,27,Elevation)*color(1,1,1),6*color(.8,1,1.2))+0.5*CloudAmbientFogTint*(c_ambient_constant*2+nightamb),
+    c=color(1.0,0.0,0.0);
+    float sd=math::dot(rd,sundir);
+    float3 sp=rX(float3(0,-1,0),Elevation/360.0)+float3(0.0,0.0,sd*.01);
+    sp=math::normalize(sp);
+    // c=calc_sun_color(sp,2.0)*.00005+amb+math::pow(math::smoothstep(-.2,.1,sp.z)*color(0.7,0.9,1),1.5*color(1.5,1.2,1));
+    float gg=math::pow(math::smoothstep(-.5,.05,rd.y),2.50);
+    c=GetEnvColor(rd,sundir,4.6,gg)+amb*1.0;
+    //+1.0*math::pow(math::smoothstep(-.25,.1,sp.z)*color(0.5,0.7,1.1),1.25*color(1.2,1.1,1));
+    sp=rX(float3(0,1,0),82.0/360.0);
+    if(MoonEnabled){
+        color mc=GetEnvColor(rd,moondir,4.16,gg);
+        mc=math::lerp(mc,color(math::luminance(mc*color(1,.75,0.35))),0.65);
+        //c+=MoonColor*mc*.005*color(1,1.2,2.3);
+        c+=MoonColor*mc*.006*color(1,1,1);
+
+    }
+    return c;
+}
+color PollutionFunction(float3 p,uniform bool IsAmbient=false,
+    uniform color PollutionColor=color(0.08016878, 0.08016798, 0.08016798) [[ anno::in_group("Night") ]],
+    uniform float3 PollutionPosition=float3(0, 0, 0) [[ anno::in_group("Night") ]],
+    uniform float4 PollutionShaper=float4(0, 0, 0, 0) [[ anno::in_group("Night") ]]
+    ){
+    float3 rd=math::normalize(p);
+
+    // float d=math::dot(rd,math::normalize(PollutionPosition));
+    float d=math::dot(rd,math::normalize(float3(0.0,.01,0.0)+(math::length(PollutionPosition)>0.0?PollutionPosition:float3(0,1,0))));
+    d=math::lerp(d,-0.5,linstep(10,1,math::length(PollutionPosition)));
+
+    color c=color(1)*PollutionColor;
+    float decay=math::exp2(PollutionShaper.y*0.1);
+    // float size=math::max(PollutionShaper.x,0.0);
+    float size=0.01;
+    float g=PollutionShaper.x;
+    // c=PollutionColor*0.1*float(math::length(p-PollutionPosition)<PollutionShaper.x);
+    color pc=math::pow(PollutionColor,color(1.0+g)-color(g)*(math::exp2(-decay*0.003*math::max(0.0,math::length(float3(1,0,1)*(p-PollutionPosition))-size))));
+    // c=PollutionColor*math::exp2((PollutionShaper.z*0.1)-decay*0.01*math::max(0.0,math::length(float3(1,0,1)*(p-PollutionPosition))-size));
+    c=pc*math::exp2((PollutionShaper.z*0.1)-decay*0.01*math::max(0.0,math::length(float3(1,0,1)*(p-PollutionPosition))-size));
+    
+    // c/=p.y*0.01;
+    if(IsAmbient){
+        // c=color(1)
+        // *math::exp2(PollutionShaper.z*0.1)
+        // /math::pow(0.1*math::max(10.0,math::length(PollutionPosition)),2.0)
+        // *math::exp2(d*3.0-decay+decay*0.01*size+4.0)
+
+        // *math::exp2(-math::abs(rd.y)*7.0+rd.y*6.0)
+        // *PollutionColor;
+
+
+         // c=1.0*PollutionColor
+         c=4.0*math::pow(PollutionColor,color(1.0+g)-color(g)*(math::exp2(-0.1*decay*0.01*(100.0+math::max(0.0,math::length((rd*math::length(PollutionPosition*float3(1,0,1))-float3(1,0,1)*PollutionPosition))-size)))))
+         // c=1.0*pc
+         /(1.0+.01*math::length(float3(1,0,1)*(p-PollutionPosition)))
+         *math::exp2(-math::abs(rd.y)*11.0+rd.y*8.0)
+         *math::exp2((PollutionShaper.z*0.1)-0.35*decay*0.01*(100.0+math::max(0.0,math::length((rd*math::length(PollutionPosition*float3(1,0,1))-float3(1,0,1)*PollutionPosition))-size)));
+    }
+    return c;
+}
+
+
+// color GetFogAtmosphere(float3 rd,float3 sundir,float z){
+//     color c=color(1.0,0.0,1.0)*z*.1*rd.y;
+//     float3 sun_dir=float3(sundir.x,sundir.z,sundir.y);
+//     float3 dir=float3(rd.x,rd.z,rd.y);
+//     float factor = 1.0;
+//     if (sun_dir.z < 0.001) {
+//         if (sun_dir.z < 0.0)  {
+//             factor = night_brightness_adjustment(sun_dir);
+//         }
+//         sun_dir.z = 0.001;
+//         sun_dir = math::normalize(sun_dir);
+//     }
+//     color tint;
+//     if (factor > 0.0) {
+//         tint = calc_env_color(sun_dir, dir, 2.0);
+//         if (factor < 1.0) {
+//             tint *= factor;
+//         }
+//     } else {
+//         tint = color(0.);
+//     }
+
+
+//     //c=0.0001*calc_env_color(sun_dir, dir, 2.0);
+
+//     c=c=0.0001*tint;
+
+//     return c;
+// }
+
+color DrawGround(float3 rd,float3 sundir,float3 moondir,bool MoonEnabled,color MoonColor,
+    color c_clear,
+    color c_ambient_constant,
+    color nightamb,
+    float Elevation=0,
+    // uniform float LowerHemisphereFactor=0,
+    // uniform float LowerHemisphereSlope=30,
+    // uniform float LowerHemisphereSlope2=30,
+    // uniform float LowerHemisphereDesaturate=0.6,
+    // uniform color LowerHemisphereTint=color(1),
+    uniform float CloudAmbientFog=0,
+    uniform color CloudAmbientFogTint=color(1),
+    uniform float4 CloudAmbientFogShaper=float4(0)
+    ){
+
+    float3 p=float3(rd.x,rd.y,-rd.z);
+
+    float3 eye=float3(0,-CloudAmbientFogShaper.z*0.1,0);
+    float3 endpoint=rd*15./(math::abs(rd.y)+.0001);
+
+
+    color c=(c_ambient_constant+nightamb)*0.5;
+    c=c_clear+nightamb*0.1;
+
+    // c=AtmoFog(c,CloudAmbientFogTint*color(1)*math::pow(linstep(-11,2,Elevation),2)+c_ambient_constant+nightamb,
+    c=AtmoFog(c,
+        // CloudAmbientFogTint*color(1)*math::pow(linstep(-13,5,Elevation),3)+0.5*CloudAmbientFogTint*(c_ambient_constant+nightamb),
+        // CloudAmbientFogTint*color(1)*math::pow(linstep(-13,27,Elevation)*color(1,1,1),6*color(.8,1,1.2))+0.5*CloudAmbientFogTint*(c_ambient_constant*2+nightamb),
+        CloudAmbientFogTint*GetFogColor(rd,sundir,moondir,MoonEnabled,MoonColor,Elevation,nightamb+c_ambient_constant),
+        eye,eye+endpoint,
+        CloudAmbientFog-10,
+        CloudAmbientFogShaper
+        );
+    // c=GetFogColor(rd,sundir,moondir,MoonEnabled,MoonColor,Elevation,nightamb+c_ambient_constant);
+    return c;
+}
+color DrawStars(float3 rd,
+    float Elevation=0,
+    float Azimuth=0,
+    float Latitude=0,
+    float SHA=0,
+    float Declination=0,
+    uniform float AzimuthOffset=0,
+    // uniform bool StarsEnabled = true [[ anno::in_group("Night") ]],
+    uniform color StarsTint=color(1) [[ anno::in_group("Night") ]],
+    uniform float StarsIntensityExp=50 [[ anno::in_group("Night") ]],
+    uniform float StarsScaleExp=0 [[ anno::in_group("Night") ]],
+    uniform int StarsLevels = 5 [[ anno::soft_range(1, 10), anno::in_group("Night") ]],
+    uniform float StarsLevelScale=2 [[ anno::in_group("Night") ]],
+    uniform float StarsLevelGain=0.5 [[ anno::in_group("Night") ]],
+    uniform float StarsNoiseScale=0 [[ anno::in_group("Night") ]],
+    uniform float StarsNoiseToIntensity=0 [[ anno::in_group("Night") ]],
+    uniform float StarsTempMin=1000 [[ anno::in_group("Night") ]],
+    uniform float StarsTempMax=80000 [[ anno::in_group("Night") ]],
+    uniform float StarsGlowFactor=0 [[ anno::in_group("Night") ]],
+    uniform float StarsClampSize=0 [[ anno::in_group("Night") ]]
+    // uniform texture_2d StarsTexture = texture_2d() [[ anno::in_group("Night") ]],
+    // uniform float StarsTextureIntensity = 0 [[ anno::in_group("Night") ]]
+
+    ){
+    float3 p=math::normalize(rd);
+    p=float3(p.x,-p.z,p.y);
+    p=(AzimuthOffset==0.0)?p:rZ(p,AzimuthOffset/360.0);
+    p=rY(p,Latitude/360.0);
+    p=rX(p,-SHA/360.0);//-DayOfYear/365.0);
+    p=rY(p,-Declination/360.0);
+    color c_sum=color(0);
+    int iter=StarsLevels;
+    float3 p0=p;
+    for(int i=0;i<iter;i++){
+        // p=rZ(p,0.125);
+        p=float3x3(0.6907,0.0679,-0.7199,0.2884,0.8871,0.3604,0.6631,-0.4566,0.5932)*p;
+        float sz=math::exp2(float(i)*math::log2(StarsLevelScale)+6+StarsScaleExp*0.1);
+        float3 wp=math::floor(p*sz);
+        float3 fp=math::frac(p*sz);
+        float3 wf=math::sin(wp*.3+math::sin(float3(wp.z,wp.x,wp.y)*1.3))*.5+.5;
+        // float4 rnd=float4(0.5);//rndz(wp,4+i);
+        // rnd=math::frac(float4(3,5,7,2)*7*math::sin(flow_noise(float2(wf.x,wf.y),wf.z)));
+        // float4 rnd=math::frac(float4(3,5,7,2)*math::sin(1.2*float4(wp.x,wp.y,wp.z,0.5)+float4(12,13,14,15)*math::length(wp)));
+        float4 rnd=math::frac(float4(3,5,7,2)*7*math::sin(.4+5.3*flow_noise(float2(wf.x,wf.y)*3.1,wf.z*1.9)));
+        // rnd.x=0.2;
+        float3 ofs=(float3(rnd.x,rnd.y,rnd.z)-0.5);
+        // float d=math::length(fp-float3(0.5,0.5,0.5));
+        float cellshift=(math::length(wp+ofs+float3(0.5))-sz);
+        float d=math::length(fp-ofs-float3(0.5)+math::normalize(p)*cellshift);
+         d+=0.001*StarsClampSize*sz;
+        float pillowsize=.15;//exp2(4*length(rnd.xyz-0.5));
+        float pillow=
+        math::smoothstep(0,pillowsize,1-math::abs(fp.x*2-1))
+        *math::smoothstep(0,pillowsize,1-math::abs(fp.y*2-1))
+        *math::smoothstep(0,pillowsize,1-math::abs(fp.z*2-1));
+        pillow=math::pow(pillow,0.5);
+        float temperature=math::exp2(math::lerp(math::log2(StarsTempMin),math::log2(StarsTempMax),math::pow(math::frac(.3+rnd.w*58.0),.5)));
+        // float gvar=math::exp2(19*(math::abs(math::sin(8*math::length(math::sin(p*1*math::exp2(.3*float(i))))))-0.5));
+        float gvar=math::exp2(-13.1/(.01+2*math::abs(p0.z)*math::exp2(3*math::length(math::sin(p0*6)))));
+        c_sum+=color(1)
+        // *linstep(2.95,0.0,d*sz)
+        *math::lerp(linstep(10,0.0,d*sz),linstep(1,0.0,d),StarsGlowFactor)
+        *(1+.1/(.01+rnd.w))
+        // *math::exp2(-float(i)*gvar*0+StarsIntensityExp*0.1+float(i)*math::log2(StarsLevelGain)+(rnd.w-0.8)*math::exp2(StarsNoiseToIntensity*0.1)-1)
+        *math::exp2(-float(i)*gvar*0+StarsIntensityExp*0.1+float(i)*math::log2(StarsLevelGain)-1.0)
+        // *(0.2+math::exp2((rnd.w-0.8)*math::exp2(StarsNoiseToIntensity*0.1)))
+        *(0.2*math::exp2(3.0*(math::frac(rnd.w*4.1+rnd.x*13.3)-0.5))+math::exp2(-StarsNoiseToIntensity*0.05)*1./(.01+math::pow(rnd.w*2.0,math::exp2(StarsNoiseToIntensity*0.1-0.2*p.y*p.y))))
+        // *math::exp2(3.0*(math::frac(rnd.w*4.1+rnd.x*13.3)-0.5))
+        *pillow
+        // *math::pow(rd.y,0.2)*math::exp2(-math::exp2(float3(-1,0,1)*1)*.1/rd.y)*math::exp2(float3(-1,0,1)*.1)
+        // *TempToRGB(math::exp2(math::lerp(math::log2(StarsTempMin),math::log2(StarsTempMax),math::pow(math::frac(rnd.w*88),.5))))
+        // *color(TempToRGB(temperature))
+        *(color(0.03)+math::blackbody(temperature*1.5))
+        // *.01/(.0+d)
+        *linstep(.5,.3,d)
+        *0.1*(.01/(.0+d)*0+.001/(.0+d*d))*(1+0.1*StarsClampSize*sz)
+        ;
+    }
+    // d+=1.2*linstep(.125,0.1,math::length(math::frac(p)-float3(0.5,0.5,0.5)))/(1+d)*math::log2(math::length(p)*0.1+1);
+    color c=c_sum;
+    if(StarsNoiseScale>0){
+        float3 mp=p;
+        mp+=math::sin(float3(mp.y,mp.z,mp.x)*3.0)*0.1;
+        float cc= summed_flow_noise6(
+            pos:float2(mp.x,mp.z)*1.3+float2(2.3,3.5),
+            time:p.y*.750+0.3,
+            iterations:5,
+            abs_noise:false,
+            weight_factor:1.27,
+            pos_factor:2.5,
+            v_progressive_offset:0.0+mp.y*0.3
+            // morph_factor:0.15
+        );
+    float mw=math::exp2(-18.0*p.y*p.y-2.0*(1.0-p.x));
+    c+=color(.2,.5,1.0)*math::pow(math::clamp(math::frac(cc*0.5+0.5),0.0,1.0),4.0)*0.02*StarsNoiseScale*mw+c_sum*mw*0.5*StarsNoiseScale;
+    }
+
+    // float3 pk=math::normalize(rd);
+    // color wc=color(math::exp2(-float3(-1,0,1)*NightColorD*0.1));
+    // float yy=pk.y*math::exp2(NightColorH*0.1);
+    // c=c_sum*math::exp2(-3*math::exp2(-yy*3))+
+    // color(1)*math::exp2(-yy*wc*7-math::pow(yy*wc,2)*3)*wc*NightColor;
+
+    // c=c_sum*math::pow(rd.y,0.2)*math::exp2(-math::exp2(float3(-1,0,1)*1)*.1/rd.y)*math::exp2(float3(-1,0,1)*.1);
+    // color ctex=tex::lookup_color(StarsTexture,XYZtoLatLong(p));
+    // c=c*(color(1)+5*math::pow(ctex/(color(1)+ctex*0.4),color(1)))+StarsTextureIntensity*math::pow(ctex/(color(1)+ctex),color(3));
+
+    c=c*math::exp2(-.05/(.001+rd.y));
+    return c*StarsTint;
+}
+color NightFog(float3 rd,
+    float3 moondir,bool MoonEnabled,color MoonColor,
+    uniform bool IsAmbient=false,
+    float Elevation=0,
+    float Azimuth=0,
+    
+    // uniform float Latitude=0,
+    // uniform float SHA=0,
+    // uniform float Declination=0,
+    uniform color TwilightColor=color(0.052f, 0.184f, 0.401f) [[ anno::in_group("Night") ]],
+    uniform color NightColor=color(0.052f, 0.184f, 0.401f) [[ anno::in_group("Night") ]],
+    uniform float NightColorD=-6 [[ anno::in_group("Night") ]],
+    uniform float NightColorH=-11 [[ anno::in_group("Night") ]],
+    uniform float NightColorG=-2 [[ anno::in_group("Night") ]],
+    uniform float4 NightVector=float4(-1, -0.2, 1, 0) [[ anno::in_group("Night") ]]
+    // uniform float4 NightTiltVector=float4(0, 0, 0, 0) [[ anno::in_group("Night") ]]
+    ){
+    // float3 p=math::normalize(rd);
+    // p=float3(p.x,-p.z,p.y);
+    // p=rY(p,Latitude/360.0);
+    // p=rX(p,-SHA/360.0);//-DayOfYear/365.0);
+    // p=rY(p,-Declination/360.0);
+    float2 gp=r2d(float2(rd.x,rd.z),-Azimuth/360);
+    float yp=math::abs(rd.y);
+    float g=math::exp2(NightColorG*0.1);
+    color wc=color(math::exp2(-float3(NightVector.x,NightVector.y,NightVector.z)*NightVector.w*0.1/(0.5+g)));
+    // float tilt=(gp.x*NightTiltVector.x+gp.x*gp.x*NightTiltVector.y)
+    //         *math::exp2(-math::abs(Elevation/90)*NightTiltVector.z);
+    float yy=yp*math::exp2(
+        NightColorH*0.1
+        // +tilt
+        );
+    // color c=color(1)*math::exp2(-yy*wc*7-math::pow(yy*wc,2)*3)*NightColor;
+    float pw=math::exp2(NightColorD*0.1);
+    // color c=math::exp2((-yy*wc*7-.025/wc/yy)*g)*NightColor/(.01+yp);
+    color c=math::exp2((-math::pow(yy,pw)*wc*7-.025/wc/(.0001+math::pow(yy,pw)))*g)*NightColor/(.01+yp)*(1+g);
+
+    // c*=math::exp2(tilt*-0.5);
+
+    c*=0.01;
+    // c+=TwilightColor*linstep(-11,0,Elevation);
+    // c+=TwilightColor*math::smoothstep(-21,16,Elevation);
+    float3 sp=rX(float3(0,1,0),82.0/360.0);
+    sp=rX(float3(0,0,1),21.0/360.0);
+
+    float3 rp=float3(0.0,math::length(float2(rd.x,rd.z)),rd.y);
+    rp=float3(rp.z,rp.x,rp.y);
+    float gg=math::pow(math::smoothstep(-.5,.05,rd.y),2.50);
+    c+=TwilightColor*0.5*GetEnvColor(math::normalize(rd),sp,2.0,0.0)*math::smoothstep(-12,6,Elevation);
+
+    if(MoonEnabled){
+        color mc=GetEnvColor(rd,moondir,4.16,gg);
+        mc=math::lerp(mc,color(math::luminance(mc*color(1,.75,0.35))),0.65);
+        //c+=MoonColor*mc*.005*color(1,1.2,2.3);
+        c+=MoonColor*mc*.001*color(1,1,1);
+
+    }
+
+
+    // c=color(0.0);
+    // color c_night=TwilightColor*math::smoothstep(-0.3,0,math::sin(Elevation/360*math::PI*2))*0.5*math::exp2(-math::abs(rd.y)*2);
+    
+    return c;
+}
+
+color DrawDebug(
+
+    // float Latitude=0,float Longitude=0,float SHA=0,float Declination=0
+    float3 rd,float3 campos,
+    float Elevation=0,
+    float Azimuth=0,
+    float Latitude=0,
+    float SHA=0,
+    float Declination=0,
+    uniform float AzimuthOffset=0,
+
+    uniform float CloudAltitude=0,
+    uniform float CloudHeight=0,
+    uniform float CloudScaleExp=0,
+    uniform float CirrusAltitude=0,
+    uniform float CirrusScaleExp=0
+    ){
+    // float2 uv = float2(state::texture_coordinate(0).x,state::texture_coordinate(0).y);
+    // float d=math::length(uv-float2(0.5,0.5));
+    // float f=linstep(0.5,0.0,d)*math::exp2(-math::pow(d,gamma)*amp);
+    // base::texture_coordinate_info uvw = base::coordinate_source(base::texture_coordinate_object,0);
+    // float3 p=float3(uvw.position.x,uvw.position.y,uvw.position.z);
+    // p=math::normalize(p);
+
+    float3 p=math::normalize(rd);
+    p=float3(p.x,-p.z,p.y);
+    p=(AzimuthOffset==0.0)?p:rZ(p,AzimuthOffset/360.0);
+    p=rY(p,Latitude/360.0);
+    p=rX(p,-SHA/360.0);//-DayOfYear/365.0);
+    float d2=linstep(.05,0,math::abs(p.x-math::sin(Declination*math::acos(-1)/180.0)));
+    p=rY(p,-Declination/360.0);
+
+
+
+
+    float f=math::frac(p.x);
+
+    // p=rY(p,Latitude/360.0);
+    float d3=math::abs(math::frac((math::atan2(p.y,p.z)/math::acos(-1)/2+0.5+SHA/360.0)*24)*2-1);
+    // p=rX(p,-SHA/360.0);
+
+    // float d3=0;
+    // p=rY(p,-Declination/360.0);
+    //
+    // return math::max(0,math::frac(p*3)+p*0.5);
+    // d=math::length(p-float3(0,1,0));
+    // float ds=math::pow(d,1.0)+0.02;
+    f=0;
+    float d1=math::abs(p.x)/math::sin(23.5*math::acos(-1)/180.0);
+    // float d2=linstep(.05,0,math::abs(p.x-math::sin(Declination*math::acos(-1)/180.0)));
+    // float d2=linstep(.05,0,math::abs(p.x));
+
+
+    float d4=linstep(.05,0,math::abs(p.y));
+    
+    // f=math::max(f,0.2*linstep(.02,0,math::abs(p.x)-math::sin(23.5*math::acos(-1)/180.0)));
+    f=0.2*linstep(1,1-.003,d1)*d1*d1;
+    f+=d2*math::exp2(-15*(1-d2));
+    f+=d2*math::exp2(-22*(1-d3));
+    f+=d4*math::exp2(-8*(1-d4))*math::pow(p.z*0.5+0.5,2);
+    // return color(f);
+    float y_start=math::exp2(CloudAltitude*0.1);
+    float y_end=math::exp2(CloudAltitude*0.1)+math::exp2(CloudHeight*0.1);
+
+    float3 pl1=rd/rd.y;
+    pl1*=y_start;
+    pl1+=campos;
+    float3 pl2=rd/rd.y;
+    pl2*=y_end;
+    pl2+=campos;
+    float cloudscale=2.0/math::exp2(CloudScaleExp*0.1);
+    color skygrid=color(math::dot(math::smoothstep(float3(.97),float3(1),math::abs(math::frac(p*10)*2-float3(1))),float3(1)));
+    color cloudgrid1=(rd.y>0)*color(math::dot(math::smoothstep(float2(.97),float2(1),
+        math::abs(math::frac(float2(pl1.x-0.0,pl1.z-0.0)*cloudscale)*2-float2(1))),float2(1)));
+    color cloudgrid2=(rd.y>0)*color(math::dot(math::smoothstep(float2(.97),float2(1),
+        math::abs(math::frac(float2(pl2.x-0.0,pl2.z-0.0)*cloudscale)*2-float2(1))),float2(1)));
+    
+    color archline=(rd.y>0?1:0.2)*color(1)*d2*math::exp2(-15*(1-d2));
+
+    return skygrid*color(1,0,0)+cloudgrid1*color(0,1,0)+cloudgrid2*color(0,0.5,1)+archline*color(1);
+}
+
+float2 CloudFunction(float3 pIn,float dpos=0,float3 ro=float3(0,0,0),
+    // uniform float Latitude=0,
+    // uniform float SHA=0,
+    // uniform float Declination=0,
+
+    uniform bool CumulusEnabled = true,
+    uniform float CloudScaleExp=60,
+    uniform float CloudHeight=20,
+    uniform float CloudAltitude=36,
+    int CumulusLevels =5,
+    uniform float CumulusLevelGain=0.5,
+    uniform float CumulusLevelScale = 2.0,
+    uniform float4 CumulusDistortShaper=float4(0),
+    uniform float4 CumulusBaseShaper=float4(0),
+    
+    uniform float CumulusMorphFactor=0.5,
+    uniform float4 CumulusNoiseShaper=float4(0),
+    float CloudCoverage=0.3,
+    uniform float CloudCoverageTilt=0.0,
+    uniform float CloudCoverageFade=0.0,
+    uniform float4 CloudCoverageCurveA=float4(0,0,0,0),
+    uniform float4 CloudCoverageCurveB=float4(0,0,0,0),
+
+    uniform float CloudDensityExp=100,
+    uniform float CloudDensityClamp=0,
+    uniform float CloudDensityTilt=0,
+    uniform float CloudDensityFade=0.0,
+    uniform float4 CloudDensityCurveA=float4(0,0,0,0),
+    uniform float4 CloudDensityCurveB=float4(0,0,0,0),
+
+
+    uniform float CloudDistanceToDensity=0,
+    uniform float CloudDistanceToCoverage=0,
+    // uniform float StratusCoverage=0 [[ anno::in_group("Cumulus") ]],
+    // uniform float StratusDensity=0 [[ anno::in_group("Cumulus") ]],
+    // uniform float StratusScaleX=0 [[ anno::in_group("Cumulus") ]],
+    // uniform float StratusScaleZ=0 [[ anno::in_group("Cumulus") ]],
+    // uniform float StratusPhaseY=0 [[ anno::in_group("Cumulus") ]],
+    // uniform float StratusNoiseY=0 [[ anno::in_group("Cumulus") ]],
+    // uniform float StratusThickness=0 [[ anno::in_group("Cumulus") ]],
+    // uniform float StratusDensityClamp=0 [[ anno::in_group("Cumulus") ]],
+    uniform float CloudPhaseTilt=0,
+    // uniform float CloudLODTilt=0,
+    // uniform float CloudPhaseTiltShape=0,
+    // uniform float CloudLODTiltShape=0,
+
+
+    uniform bool CloudFogEnabled=false,
+    uniform float CloudFogDensityExp=0,
+    uniform float CloudFogShape=1,
+    uniform float4 RaymarchShaper = float4(0),
+
+    // uniform float CloudDetailScaleExp=5,
+    // uniform int CloudDetailLevels=3,
+    // uniform float CloudDetailLevelScale=2,
+    // uniform float CloudDetailLevelGain=0.5,
+    // uniform float CloudDetailToCoverage=1.0,
+    // uniform float CloudDetailToDensity=0.0,
+
+    // uniform bool ContrailEnabled = true [[ anno::in_group("Contrail") ]],
+    // uniform float ContrailAltitude=0.0 [[ anno::in_group("Contrail") ]],
+    // uniform float ContrailFactor=0.0 [[ anno::in_group("Contrail") ]],
+    // uniform float StarfieldScale=0.0 [[ anno::in_group("Contrail") ]],
+    // uniform float StarfieldFactor=0.0 [[ anno::in_group("Contrail") ]],
+    // uniform float ContrailDensity=0.0 [[ anno::in_group("Contrail") ]],
+    // uniform float ContrailNoiseScale=0.0 [[ anno::in_group("Contrail") ]],
+    // uniform float ContrailNoiseAmount=0.0 [[ anno::in_group("Contrail") ]],
+    // uniform float ContrailLength=0.0 [[ anno::in_group("Contrail") ]],
+    // uniform float ContrailShape=0.0 [[ anno::in_group("Contrail") ]],
+    // uniform float ContrailFade=0.0 [[ anno::in_group("Contrail") ]],
+    // uniform float ContrailSpeed=0.0 [[ anno::in_group("Contrail") ]],
+    // uniform float ContrailWindFactor=0.0 [[ anno::in_group("Contrail") ]],
+    // uniform float ContrailWindAngle=0.0 [[ anno::in_group("Contrail") ]],
+    // uniform int ContrailLevels = 1 [[ anno::soft_range(1, 10), anno::in_group("Contrail") ]],
+
+    float anim_time=0.02,
+    uniform float speed_phase=0.002,
+    uniform float speed_motion = 1.0,
+    uniform float speed_scroll_u = 0.01,
+    uniform float speed_scroll_v = 0.01
+    ){
+    float3 p=pIn;
+    // p*=.38;
+    // p+=math::sin(float3(p.z,0,p.x)*0.362+float3(0,0,anim_time*.5))*.4;
+    // p+=math::sin(float3(p.z,0,p.x)*0.362+float3(0,0,anim_time*.5))*.4;
+    // p+=math::sin(float3(p.z,0,p.x)*0.362+float3(0,0,anim_time*.5))*.4;
+    // p+=math::sin(float3(p.z,p.x,p.y)*.0052*0.3+float3(0,0,0))*43.4*2;
+    // p+=math::sin(float3(p.z,0,p.x)*.012*0.3+float3(0,0,0))*63.4*2;
+    // p+=math::sin(float3(p.z,p.x,p.y)*.022*0.3+float3(0,0,0))*23.4*2;
+    
+    
+    float size=math::exp2(CloudScaleExp*0.1);
+
+    float dfq=.023/size;
+
+    // bool VortexEnabled=false;
+    // float3 VortexPos=float3(0,0,CumulusDistortShaper.z);
+    // p=p-ro-VortexPos;
+    // float VortexDist=math::length((p)*float3(1,0,1));
+
+    // if(VortexEnabled){
+    //     p=rY(p,anim_time*CumulusDistortShaper.w*.01+CumulusDistortShaper.x*math::exp2(math::abs(CumulusDistortShaper.x*0.1))*.2*math::log2(130.01/VortexDist));
+        
+    // }
+    // p=p+ro+VortexPos;
+
+
+    // p+=float3(0,1,0)*4*math::sin(anim_time+3.1*math::length(math::sin(float2(p.z+anim_time*speed_motion,p.x)*dfq+float2(0,anim_time*0))));
+    // p+=float3(0,1,0)*2*math::sin(2.1*math::length(math::sin(float2(p.z+anim_time*speed_motion,p.x)*dfq*2.7+float2(0,anim_time*0))));
+    
+    // p+=math::sin(float3(p.y,p.z,p.x)*math::exp2(RaymarchShaper.w*0.1))*80*math::sin(dpos*RaymarchShaper.y-0.0)*0.01*math::exp2(RaymarchShaper.x*0.1)
+    // *math::exp2(RaymarchShaper.z*math::sin(7*math::length(math::sin(p*math::exp2(RaymarchShaper.w*0.1)))));
+
+    // p+=math::sin(float3(p.y,p.z,p.x)*math::exp2(CumulusDistortShaper.w*0.1))*80*math::sin(dpos*CumulusDistortShaper.y-0.0)*0.01*math::exp2(CumulusDistortShaper.x*0.1)
+    // *summed_flow_noise4(
+    //         pos:float2(p.x, p.z)*math::exp2(CumulusDistortShaper.z*0.1)/size,
+    //         time:p.y*0.1,
+    //         iterations:1,
+    //         abs_noise:true,
+    //         // lod:lod,
+    //         // weight_factor:CumulusLevelGain,
+    //         weight_factor:1,
+    //         // *(1+math::pow(1-lf,4)*.5+.3*math::exp2(math::pow(math::abs(lf-0.5),4))),
+    //         pos_factor:2,
+    //         v_progressive_offset:0);
+    // *math::exp2(RaymarchShaper.z*math::sin(7*math::length(math::sin(p*math::exp2(RaymarchShaper.w*0.1)))));
+
+
+    // p+=math::sin(float3(p.y,p.z,p.x)*dfq+float3(0,0,anim_time*.15))*0.1/dfq;
+    // p+=math::sin(float3(p.y,p.z,p.x)*dfq+float3(0,0,anim_time*.13))*0.1/dfq;
+    
+    float y_start=math::exp2(CloudAltitude*0.1);
+    float y_end=math::exp2(CloudAltitude*0.1)+math::exp2(CloudHeight*0.1);
+
+    float lf=linstep(y_start,y_end,p.y);
+
+    float scale=1;
+
+    float phasetilt=-(lf*2-1)*CloudPhaseTilt*0.001;
+
+    float3 disp=float3(0,0,0);
+    float3 pos=float3(p.x,p.z,1)*scale+disp;
+    // float3 pos=float3((p.x-ro.x)*1+ro.x+math::sin(p.z*.0016-ro.z)*400,(p.z-ro.z)*0.021+ro.z,1)*scale+disp;
+    
+
+    float det=0;
+    float smp=0;
+    // float lod=7*(math::length(math::sin(float2(pos.x,pos.y)*0.01))-0.97);
+    float lod=0.0;//+lodtilt*0;
+    if(CumulusEnabled){
+    float vm=anim_time*speed_motion;
+    // vm=vm*math::exp2(-8*math::log2(CumulusLevelScale)*(CumulusMorphFactor)*math::exp2(math::abs(CumulusMorphFactor)));
+    vm=vm*math::exp2(-8*math::log2(CumulusLevelScale)*(0.695)*math::exp2(math::abs(0.695)));
+    float base=(CumulusBaseShaper.w!=0)?summed_flow_noise6(
+            pos:(float2(pos.x, pos.y)/size-float2(0.5,.5-vm*0.5))*math::exp2(CumulusBaseShaper.z*0.1),
+            // time:phasetilt*.0-math::pow(1-lf,math::exp2(CumulusBaseShaper.y*0.1))*CumulusBaseShaper.x,
+            // time:phasetilt*.0-math::log2(2*expc(.5-lf,math::exp2(CumulusBaseShaper.y*0.1)))*CumulusBaseShaper.x,
+            time: 0.0,
+            iterations:1,
+            abs_noise:false,
+            // lod:lod,
+            // weight_factor:CumulusLevelGain,
+            weight_factor:1,
+            // *(1+math::pow(1-lf,4)*.5+.3*math::exp2(math::pow(math::abs(lf-0.5),4))),
+            pos_factor:2,
+            v_progressive_offset:vm*0.2,
+            morph_factor:0.6,
+            // noise_shaper:CumulusNoiseShaper):0.5;
+            noise_shaper:float4(-200,0,0,0)):0.5;
+
+    smp= summed_flow_noise6(
+            pos:float2(pos.x, pos.y)/size-float2(0,vm*0.5),
+            time:anim_time*speed_phase*0.001+phasetilt+CumulusDistortShaper.w*(base-0.5),
+            iterations:CumulusLevels,
+            abs_noise:true,
+            // lod:lod,
+            // weight_factor:CumulusLevelGain,
+            weight_factor:CumulusLevelGain,
+            //*math::exp2((lf-0.5)*CumulusNoiseShaper.w),
+            // *(1+math::pow(1-lf,4)*.5+.3*math::exp2(math::pow(math::abs(lf-0.5),4))),
+            pos_factor:CumulusLevelScale,
+            // v_progressive_offset:vm,
+            v_progressive_offset:vm,
+            morph_factor:CumulusMorphFactor,
+            // noise_shaper:CumulusNoiseShaper);
+            noise_shaper:float4(CumulusNoiseShaper.x,(math::frac(dpos*16.18)-0.5)*CumulusNoiseShaper.y,CumulusNoiseShaper.z,CumulusNoiseShaper.w));
+
+    if(CumulusBaseShaper.w!=0)smp= math::max(smp,smp+(lf-0.5)*CumulusBaseShaper.y*0.1+CumulusBaseShaper.x*0.1+CumulusBaseShaper.w*base);
+
+
+
+    // if(CloudDetailToCoverage!=0||CloudDetailToDensity!=0){
+    // float detail_scale=math::exp2(CloudDetailScaleExp*0.1);    
+    // det=(summed_flow_noise4(
+    //         pos:float2(pos.x, pos.y)*detail_scale/size,
+    //         time:detail_scale*(anim_time*speed_phase*0.001+phasetilt),
+    //         iterations:CloudDetailLevels,
+    //         abs_noise:true,
+    //         weight_factor:CloudDetailLevelGain,
+    //         pos_factor:CloudDetailLevelScale,
+    //         v_progressive_offset:anim_time*speed_motion+motiontilt))/detail_scale;
+    // }
+    }else{
+        smp=-10;
+    }
+
+
+    // smp+=CloudDetailToCoverage*det;
+    float smp0=smp;
+    smp+=-((lf-0.5)*0.1*CloudCoverageTilt*math::exp2(lod*0.15*0)-0.15*math::abs(.1*CloudCoverageTilt));
+    smp+=math::length(float2(p.x-ro.x,p.z-ro.z))*0.001*CloudDistanceToCoverage;
+    // smp+=math::length(float2(p.x,p.z))*.03;
+    // smp+=1*summed_flow_noise4(
+    //         pos:float2(pos.x, pos.y)*0.0303/size,
+    //         time:0.0,
+    //         iterations:2,
+    //         abs_noise:false,
+    //         weight_factor:.65,
+    //         pos_factor:2,
+    //         v_progressive_offset:anim_time*speed_motion*.01);
+    // smp-=math::pow(1.001-lf,7)*CloudCoverageFade;
+    // smp-=.001*CloudCoverageFade/math::pow(.001+lf,1.51);
+    smp+=0.001*CloudCoverageFade*math::dot(CloudCoverageCurveB,1*math::pow(1.000-lf,math::exp2(2*float4(0,1,2,3))));
+    smp+=0.001*CloudCoverageFade*math::dot(CloudCoverageCurveA,1*math::pow(0.000+lf,math::exp2(2*float4(0,1,2,3))));
+    
+    // if(VortexEnabled){smp+=CumulusDistortShaper.y*math::log2(400./(.01+VortexDist));}
+
+    // float3 plp=float3(p.x,p.y-math::lerp(y_start,y_end,0.5),p.z)*0.0008;
+    // float2 plw=math::floor(float2(plp.x+0.5,plp.z+0.5));
+    // plp.x=math::frac(plp.x+0.5)-0.5;
+    // plp.z=math::frac(plp.z+0.5)-0.5;
+
+    // plp+=float3(math::cos(plw.y*1.308)*.09,math::cos(18*math::length(math::sin(plw+float2(0.3))))*.13,math::cos(plw.x*1.108)*.09);
+
+    // plp=rY(plp,math::sin(8*math::length(math::sin(plw+float2(0.3))))*.13);
+    // plp=rX(plp,math::sin(plw.y*1.608)*.19);
+    // plp=rZ(plp,math::sin(plw.x*2.608)*.19);
+
+    
+    // float sdf=math::length(plp);
+    // float2 txp=float2(math::length(float2(plp.x,plp.z))-.26,plp.y);
+    // // sdf=math::length(txp);
+    // txp=r2d(txp,math::atan2(plp.x,plp.z)/math::PI/4);
+    // sdf=math::max(math::abs(txp.x),math::abs(txp.y));
+    // float zxz=math::length(float2(p.x-ro.x,p.z-ro.z));
+    // smp+=linstep(.124,0,sdf+smp0*0.15)*2
+    // *math::exp2(0
+    //     +zxz*0.001/(1+zxz*.0003)
+    //     +1*math::sin(9*math::length(math::sin(plw*1.6)))
+    //     );
+    // float2 xzrep=math::frac(float2(p.x,p.z+anim_time*speed_motion*size)*0.1)-float2(0.5,0.5);
+    // float stf=math::exp2(-math::pow(math::exp2(-StratusThickness*0.1)*20*math::abs(lf-0.5+.46*math::sin(StratusPhaseY*math::PI*2+p.z*0.1*math::exp2(StratusScaleZ)-(sigm((smp-0.5)*8)-0.5)*StratusNoiseY)),2)+math::sin(p.x*.1*math::exp2(StratusScaleX*0.1))*1+1);
+    // stf=math::exp2(-math::exp2(-StratusThickness*0.1)*24*math::abs((lf-0.5+.46*math::sin(StratusPhaseY*math::PI*2+p.z*0.1*math::exp2(StratusScaleZ)-smp0*StratusNoiseY))));
+    // smp+=math::sin(dpos*RaymarchShaper.y-0.0)*4*RaymarchShaper.x
+    // *math::exp2(RaymarchShaper.z*math::sin(7*math::length(math::sin(p*math::exp2(RaymarchShaper.w*0.1)))));
+    
+    float d=math::max(0,CloudCoverage+smp-0.5)*math::exp2(CloudDensityExp*0.1);
+    
+
+    d*=math::exp2(-(lf*2-1)*0.1*CloudDensityTilt);
+    d*=math::exp2(math::dot(CloudDensityFade*(CloudDensityCurveB*0.1)*math::pow((1.0001-lf),math::exp2(float4(0,1,2,3))),float4(1)));
+    d*=math::exp2(math::dot(CloudDensityFade*(CloudDensityCurveA*0.1)*math::pow((0.0001+lf),math::exp2(float4(0,1,2,3))),float4(1)));
+    
+    
+    // d*=math::pow(linstep(1,0,math::abs(dpos*2-1)),0.5);
+
+    // d*=math::exp2(-det*10.*CloudDetailToDensity)/(1+math::exp2(-det*10.*CloudDetailToDensity));
+    // d*=math::exp2(math::length(float2(p.x-ro.x,p.z-ro.z))*0.01*CloudDistanceToDensity);
+    d*=math::exp2(math::min(10,math::length(float2(p.x-ro.x,p.z-ro.z))*0.01*CloudDistanceToDensity));
+
+    // stf=stf*math::exp2(StratusCoverage*0.1+math::sin(smp0*2+p.x*0.04)*StratusDensity+7*math::sin(p.x*.1*math::exp2(StratusScaleX*0.1)));
+    
+    // d+=.1*stf/(1+stf*math::exp2(-StratusDensityClamp*0.1));
+
+    d*=math::saturate(lf*8000);
+    if(CloudFogEnabled){
+    float dd=math::exp2(-(p.y-0.2)*CloudFogShape*0.1+CloudFogDensityExp*0.1-8+math::frac(8*math::length(math::frac(p*28))))*math::length(p);
+    // d+=dd/(1+dd)/(1+d);
+    }
+    // d*=math::saturate(lf*8000);
+
+    d=d/(1+d*math::exp2(-CloudDensityClamp*0.1));
+    return float2(d,smp);
+    // return d/(1+d*0.1);
+}
+float3 intPlane(float3 pl,float3 ro,float3 rd,float pt){
+    float t=-(math::dot(pl,ro)+pt)/math::dot(pl,rd);
+    return ro+rd*t;
+}
+float2 CirrusFunction(float3 ro,float3 rd,
+    float input_time=0,
+    float speed_motion=1,
+    float y_end=1,
+    uniform bool detailed=true,
+    float ShadowSmoothFactor=0,
+    uniform float CirrusSpeed=0.0,
+    uniform bool CirrusEnabled=true,
+    uniform float CirrusAltitude=41.0,
+    uniform float CirrusScaleExp=0,
+    uniform float4 CirrusShaper=float4(0,0,0,0),
+    uniform float4 CirrusShaper2=float4(0,0,0,0),
+    uniform float4 CirrusBlurShaper=float4(0,0,0,0),
+    uniform float CirrusFactor=0,
+    uniform float CirrusDensity=0,
+    uniform float CirrusCoverage=0,
+    uniform float CirrusThickness=1.0,
+    uniform int CirrusLevels = 4,
+    uniform float CirrusLevelScale=2,
+    uniform float CirrusLevelGain=0.5,
+    uniform float CirrusFade=1.0
+    ){
+    float anim_time=input_time*math::exp2(CirrusSpeed*0.1);
+    float3 p=rd;
+    float cc=0;
+    float cirrus_scale=math::exp2(CirrusScaleExp*0.1-1);
+    float3 pp3=intPlane(float3(0,-1,0),ro,rd,y_end+math::exp2(CirrusAltitude*0.1));
+    // float2 pp=cirrus_scale*y_end*(float2(p.x,-p.z)/(.0001+p.y/y_end)+
+    //         float2(ro.x,-ro.z));
+    float2 pp=float2(pp3.x,-pp3.z)*cirrus_scale+float2(0.13,-0.34)*anim_time*speed_motion*cirrus_scale+float2(0.03,-0.125)*anim_time;
+    float2 pp0=pp;
+    // float lod=math::sin(pp3.x*0.12*cirrus_scale)*2+1-.3/(math::abs(rd.y)+.01)+2*math::sin(6*math::length(math::sin(0.043*float2(pp3.x,pp3.z)*cirrus_scale)));
+    float lod=0.0+math::sin(pp3.x*2.12*cirrus_scale)*1;
+    lod-=.3/(.01+math::saturate(rd.y));
+
+    float scale=math::exp2(CirrusShaper.x*0.1);
+    float blurscale=math::exp2(CirrusBlurShaper.y*0.1)/cirrus_scale;
+    float blurwidth=math::exp2(CirrusBlurShaper.x*0.1);
+    float dpos=math::frac(31*math::length(math::sin(rd*2111)));
+    // float blurnoise=expc(dpos-0.5,math::exp2(CirrusBlurShaper.z*0.1));
+    // blurnoise/=.1+rd.y;
+    // blurnoise=dpos*blurnoise/(1+blurnoise);
+    float blurnoise=math::pow(dpos,math::exp2(CirrusBlurShaper.z*0.1));
+    // float blurnoise=dpos;
+    pp+=float2(0,CirrusBlurShaper.w*0.001)*blurnoise*blurwidth/blurscale;
+    pp+=math::sin(float2(pp.y,pp.x)*13.1*blurscale+float2(anim_time*0,0))*blurnoise*blurwidth*0.02/blurscale;
+    pp+=math::sin(float2(pp.y+2,pp.x)*5.1*blurscale+float2(anim_time*0,0))*blurnoise*blurwidth*0.06/blurscale;
+    pp+=math::sin(float2(pp.y,pp.x+3)*24)*8*math::length(pp-pp0)/14;
+    cc= summed_flow_noise_lod(
+            pos:pp*scale,
+            time:anim_time*0.021+0.4,
+            iterations:3,
+            abs_noise:true,
+            lod:lod,
+            // weight_factor:0.4+.4*rd.y,
+            // pos_factor:2.20,
+            weight_factor:CirrusLevelGain,
+            pos_factor:CirrusLevelScale,
+            
+            v_progressive_offset:anim_time*speed_motion*-.0*cirrus_scale,
+            morph_factor:0.15
+            // v_progressive_offset:anim_time*speed_motion*6*math::exp2(CirrusScaleExp*0.1)
+        );
+    // cc*=math::exp2(lod*-0.5);
+    // cc*=CirrusShaper.x;
+
+    
+    // lod2=cc*8;
+    cc=(sigm(cc*math::exp2(CirrusShaper.y*0.1))-0.5);
+
+    // float lod2=-.102/(math::abs(rd.y)+.01)+cc*CirrusShaper.w;
+    
+    float cc2=0;
+    float cc3=0;
+    if(detailed){
+    float lod2=cc*CirrusShaper.w;
+    lod2=lod2-.2/(math::abs(rd.y)+.01);
+    cc2=summed_flow_noise_lod(
+            pos:pp*math::exp2(CirrusShaper2.x*0.1)+float2(3.0,1.4),
+            time:anim_time*0.10811+0.1,
+            iterations:CirrusLevels,
+            abs_noise:true,
+            lod:lod2,
+            // weight_factor:0.4+.4*rd.y,
+            // pos_factor:2.20,
+            weight_factor:CirrusLevelGain,
+            pos_factor:CirrusLevelScale,
+            v_progressive_offset:0,
+            morph_factor:0.15
+            // v_progressive_offset:anim_time*speed_motion*6*math::exp2(CirrusScaleExp*0.1)
+        );
+    // cc3=summed_flow_noise4(
+    //         pos:pp*math::exp2(CirrusShaper2.x*0.1),
+    //         time:anim_time*0.15+0.1,
+    //         iterations:3,
+    //         abs_noise:false,
+    //         // weight_factor:0.4+.4*rd.y,
+    //         // pos_factor:2.20,
+    //         weight_factor:CirrusLevelGain,
+    //         pos_factor:CirrusLevelScale,
+    //         v_progressive_offset:0,
+    //         morph_factor:0.15
+    //         // v_progressive_offset:anim_time*speed_motion*6*math::exp2(CirrusScaleExp*0.1)
+    //     );
+    }
+    // float cc0=cc;
+    //cc+=-CirrusFade*(math::exp2(cc2)/(1.0+math::exp2(cc2))-0.5);
+    // cc+=-CirrusFade*cc2;
+    cc=0
+    +cc*CirrusShaper.z*0.1
+    +(sigm(cc2*math::exp2(CirrusShaper2.y*0.1+cc*CirrusShaper2.w))-0.5)*CirrusShaper2.z*0.1//*math::exp2(+cc3*CirrusFade)
+
+    ;
+    cc-=CirrusCoverage*0.1-CirrusFade*math::exp2(-rd.y*2)/(.01+math::abs(rd.y));
+
+    cc*=math::exp2(CirrusDensity*0.1-ShadowSmoothFactor);
+    cc+=CirrusCoverage*0.1;
+    cc=math::min(cc,20);
+    // cc=0.1*math::exp2(cc)/(1+math::exp2(cc+0*cc3*CirrusFade));
+    cc=0.1*math::exp2(cc)/(1+math::exp2(cc));
+    cc*=math::exp2(-.5/(.01+math::abs(rd.y)));
+    // cc*=math::exp2(cc3*CirrusFade*0+CirrusThickness*0.1);
+    // cc*=1*expc(dpos-0.5,math::exp2(CirrusBlurShaper.z*0.1));
+    //+4*math::sin(pp3.z*110.12*cirrus_scale)
+    return float2(cc,0);
+    // float2 pp4=math::lerp(float2(pp.y,pp.x),float2(pp0.y,pp0.x),0.76)*scale*28;
+    // pp4+=math::sin(float2(pp4.y,pp4.x)*14)/14;
+    // float clt=summed_flow_noise_lod(
+    //         // pos:(pp*scale+math::sin(float2(pp.y,pp.x)*48*scale)/28/scale)*9,
+    //         pos:pp4,
+    //         time:anim_time*0.205+0.2,
+    //         iterations:2,
+    //         abs_noise:true,
+    //         lod:lod*0-.5/(.01+math::saturate(rd.y)),
+    //         // weight_factor:0.4+.4*rd.y,
+    //         // pos_factor:2.20,
+    //         weight_factor:1,
+    //         pos_factor:2,
+            
+    //         v_progressive_offset:anim_time*113.2,
+    //         morph_factor:0.15
+    //         // v_progressive_offset:anim_time*speed_motion*6*math::exp2(CirrusScaleExp*0.1)
+    //     );
+
+    // return float2(cc,clt*math::length(pp-pp0)/(1+math::length(pp-pp0)));
+
+}
+color saturation_tweak(color col_input,float saturation=1.0,bool Inverse=false){
+    // color c=arch_colortweak(col_input, saturation, 0);
+
+    color c=Inverse
+    ?arch_colortweak(col_input, 1./math::max(0.1,saturation), 0)
+    :arch_colortweak(col_input, saturation, 0)
+    ;
+    
+    return c;
+}
+
+float4 trace_clouds(
+    // base::texture_coordinate_info uvw,
+    float3 raydir,float3 sundir,float3 campos,
+    float3 moondir,
+    color c_clear,
+    color c_stars,
+    color c_ambient_constant,
+    // color c_ambient_clear,
+    color nightcol,
+    color nightamb,
+    float Elevation=0,
+    float Azimuth=0,
+    float Latitude=0,
+    float SHA=0,
+    float Declination=0,
+
+
+    uniform bool CumulusEnabled = true,
+    uniform float CloudScaleExp=60,
+    uniform float CloudHeight=20,
+    uniform float CloudAltitude=36,
+    uniform int CumulusLevels =6,
+    uniform float CumulusLevelGain=0.5,
+    uniform float CumulusLevelScale = 2.1,
+    uniform float4 CumulusDistortShaper=float4(0),
+    uniform float4 CumulusBaseShaper=float4(0),
+    uniform float CumulusMorphFactor=0.5,
+    uniform float4 CumulusNoiseShaper=float4(0),
+    uniform float CloudCoverage=0.3,
+    uniform float CloudCoverageTilt=0.0,
+    uniform float CloudCoverageFade=0.0,
+    uniform float4 CloudCoverageCurveA=float4(0,0,0,0),
+    uniform float4 CloudCoverageCurveB=float4(0,0,0,0),
+
+    uniform float CloudDensityExp=100,
+    uniform float CloudDensityClamp=0 [[ anno::in_group("Cumulus") ]],
+    uniform float CloudDensityTilt=0,
+    uniform float CloudDensityFade=0.0,
+    uniform float4 CloudDensityCurveA=float4(0,0,0,0),
+    uniform float4 CloudDensityCurveB=float4(0,0,0,0),
+
+    uniform float CloudDistanceToDensity=0,
+    uniform float CloudDistanceToCoverage=0,
+    // uniform float StratusCoverage=0 [[ anno::in_group("Cumulus") ]],
+    // uniform float StratusDensity=0 [[ anno::in_group("Cumulus") ]],
+    // uniform float StratusScaleX=0 [[ anno::in_group("Cumulus") ]],
+    // uniform float StratusScaleZ=0 [[ anno::in_group("Cumulus") ]],
+    // uniform float StratusPhaseY=0 [[ anno::in_group("Cumulus") ]],
+    // uniform float StratusNoiseY=0 [[ anno::in_group("Cumulus") ]],
+    // uniform float StratusThickness=0 [[ anno::in_group("Cumulus") ]],
+    // uniform float StratusDensityClamp=0 [[ anno::in_group("Cumulus") ]],
+    uniform float CloudPhaseTilt=0,
+    // uniform float CloudLODTilt=0,
+    // uniform float CloudPhaseTiltShape=0,
+    // uniform float CloudLODTiltShape=0,
+
+    uniform float CloudLightFactor=0,
+    uniform float4 CloudLightCurve=float4(0) [[ anno::in_group("Lighting") ]],
+    uniform float4 CloudLightCurve2=float4(0) [[ anno::in_group("Lighting") ]],
+    uniform float4 CloudShadowCurve=float4(0) [[ anno::in_group("Lighting") ]],
+    uniform float4 CloudEdgeCurve=float4(0) [[ anno::in_group("Lighting") ]],
+    // uniform float CloudAbsorbFactor=0,
+
+    uniform float CloudScattering=0 [[ anno::in_group("Lighting") ]],
+    uniform float CloudExtinction=0 [[ anno::in_group("Lighting") ]],
+    uniform color CloudAmbientTint=color(1.0) [[ anno::in_group("Lighting") ]],
+    // uniform float CloudAmbientFactor=0,
+    // uniform float CloudAmbientShape=0,
+    uniform float CloudLightGlow=0,
+
+    uniform float CloudAmbientFog=0,
+    uniform color CloudAmbientFogTint=color(1),
+    uniform float4 CloudAmbientFogShaper=float4(0),
+    uniform bool CloudFogEnabled=false,
+    uniform float CloudFogDensityExp=0,
+    uniform float CloudFogShape=1,
+
+
+    // uniform float CloudDetailScaleExp=5,
+    // uniform int CloudDetailLevels=3,
+    // uniform float CloudDetailLevelScale=2,
+    // uniform float CloudDetailLevelGain=0.5,
+    // uniform float CloudDetailToCoverage=1.0,
+    // uniform float CloudDetailToDensity=0.0,
+
+    uniform float CloudShadowFactor=0,
+    uniform float CloudShadowDistance=0,
+    uniform float CloudShadowBias=0,
+    uniform float CloudShadowExp=0,
+    uniform float CloudShadowDither=0.0,
+    // uniform bool CloudShadowDetailed=false,
+
+    uniform float CirrusSpeed=0.0,
+    uniform bool CirrusEnabled = true,
+    uniform float CirrusAltitude=41.0,
+    uniform float CirrusScaleExp=0,
+    uniform float4 CirrusShaper=float4(0,0,0,0),
+    uniform float4 CirrusShaper2=float4(0,0,0,0),
+    uniform float4 CirrusBlurShaper=float4(0,0,0,0),
+    uniform float4 CirrusLightShaper=float4(0,0,0,0),
+    uniform float CirrusFactor=0,
+    uniform float CirrusDensity=0,
+    uniform float CirrusCoverage=0,
+    uniform float CirrusThickness=1.0,
+    uniform int CirrusLevels = 4,
+    uniform float CirrusLevelScale=2,
+    uniform float CirrusLevelGain=0.5,
+    uniform float CirrusFade=1.0,
+    // uniform float CirrusShadowFactor=1.0,
+    // uniform bool CirrusShadowEnabled = false,
+
+    // uniform bool ContrailEnabled = true [[ anno::in_group("Contrail") ]],
+    // uniform float ContrailAltitude=0.0 [[ anno::in_group("Contrail") ]],
+    // uniform float ContrailFactor=0.0 [[ anno::in_group("Contrail") ]],
+    // uniform float StarfieldScale=0.0 [[ anno::in_group("Contrail") ]],
+    // uniform float StarfieldFactor=0.0 [[ anno::in_group("Contrail") ]],
+    // uniform color StarfieldTint=color(1) [[ anno::in_group("Contrail") ]],
+    // uniform color ContrailTint=color(1) [[ anno::in_group("Contrail") ]],
+    // uniform float ContrailDensity=0.0 [[ anno::in_group("Contrail") ]],
+    // uniform float ContrailNoiseScale=0.0 [[ anno::in_group("Contrail") ]],
+    // uniform float ContrailNoiseAmount=0.0 [[ anno::in_group("Contrail") ]],
+    // uniform float ContrailLength=0.0 [[ anno::in_group("Contrail") ]],
+    // uniform float ContrailShape=0.0 [[ anno::in_group("Contrail") ]],
+    // uniform float ContrailFade=0.0 [[ anno::in_group("Contrail") ]],
+    // uniform float ContrailSpeed=0.0 [[ anno::in_group("Contrail") ]],
+    // uniform float ContrailWindFactor=0.0 [[ anno::in_group("Contrail") ]],
+    // uniform float ContrailWindAngle=0.0 [[ anno::in_group("Contrail") ]],
+    // uniform int ContrailLevels = 1 [[ anno::soft_range(1, 10), anno::in_group("Contrail") ]],
+
+    // uniform color TwilightColor=color(0.052f, 0.184f, 0.401f) [[ anno::in_group("Night") ]],
+    // uniform color NightColor=color(0.052f, 0.184f, 0.401f) [[ anno::in_group("Night") ]],
+    // uniform float NightColorD=-6 [[ anno::in_group("Night") ]],
+    // uniform float NightColorH=-11 [[ anno::in_group("Night") ]],
+    // uniform float NightColorG=-2 [[ anno::in_group("Night") ]],
+    uniform bool PollutionEnabled=true [[ anno::in_group("Night") ]],
+    uniform color PollutionColor=color(0.08016878, 0.08016798, 0.08016798) [[ anno::in_group("Night") ]],
+    uniform float3 PollutionPosition=float3(0, 0, 0) [[ anno::in_group("Night") ]],
+    uniform float4 PollutionShaper=float4(0, 0, 0, 0) [[ anno::in_group("Night") ]],
+
+    // uniform bool AuroraEnabled = false [[ anno::in_group("Night") ]],
+    // uniform float AuroraScale=0 [[ anno::in_group("Night") ]],
+    // uniform color AuroraColor=color(1) [[ anno::in_group("Night") ]],
+
+    uniform bool MoonEnabled = true [[ anno::in_group("Night") ]],
+    uniform float MoonSize=5 [[ anno::soft_range(float(0.0001f), float(180.0f)), anno::in_group("Moon") ]],
+    uniform color MoonColor = color(0.827f, 0.941f, 1.000f) [[ anno::in_group("Moon") ]],
+    // uniform float MoonIntensity=2.0 [[ anno::soft_range(float(0.0f), float(10.0f)), anno::in_group("Moon") ]],
+    // uniform float MoonGlowFactor=-25.0 [[ anno::in_group("Moon") ]],
+    uniform float MoonLightFactor=-10.0 [[ anno::in_group("Moon") ]],
+
+
+    uniform bool LightningEnabled=false [[ anno::in_group("Thunder") ]],
+    uniform color LightningColor=color(1,1,1) [[ anno::in_group("Thunder") ]],
+    uniform float LightningScale=0 [[ anno::in_group("Thunder") ]],
+    uniform float LightningFactor=0 [[ anno::in_group("Thunder") ]],
+    uniform float LightningSpeed=1 [[ anno::in_group("Thunder") ]],
+    uniform float4 LightningShaper=float4(0) [[ anno::in_group("Thunder") ]],
+    uniform float4 LightningShaper2=float4(0) [[ anno::in_group("Thunder") ]],
+
+
+    uniform int CloudRaySteps=30,
+    uniform float tr_min=0.005,
+    uniform int CloudShadowSteps=4,
+    uniform float CloudDither=1.0,
+    uniform float RayStartOffset=0.99 [[ anno::in_group("Raymarching") ]],
+    uniform float4 RaymarchShaper = float4(0),
+
+    // uniform float CloudLODTilt = 0.0,
+    // uniform float CloudPhaseTilt = 0.0,
+    uniform float SunSaturation=1.0,
+    uniform color SunTint=color(1.0),
+    float anim_time=0.02,
+    uniform float speed_phase=0.002,
+    uniform float speed_motion = 1.0,
+    uniform float speed_scroll_u = 0.01,
+    uniform float speed_scroll_v = 0.01
+    ){
+    // base::texture_coordinate_info uvw = base::coordinate_source(base::texture_coordinate_object,0);
+    // float3 p = math::normalize(float3(uvw.position.x,uvw.position.z,-uvw.position.y));
+    // float3 p=raydir;
+
+    // float sa=math::asin(math::dot(p,-sundir))/math::acos(-1)+0.5;
+    // if(p.y<=0)return c_clear;
+    color c=c_clear;
+    uniform int iter=CloudRaySteps;
+
+    // color SunColor=math::lerp(SunColorIn,math::dot(float3(SunColorIn),float3(0.34)),linstep(1,20,Elevation));
+    color SunColor=math::lerp(color(0.25,0.013,0.0),color(0.5,0.3,0.1),linstep(-0.5,10,Elevation));
+    SunColor=math::lerp(SunColor,color(1.0,0.98,0.95),linstep(10,20,Elevation));
+
+    SunColor=GetSunColor(Elevation,0,CloudAmbientFog,CloudAmbientFogShaper);
+    // SunColor=arch_colortweak(SunColor, SunSaturation, 0)*SunTint;
+
+
+    // SunColor=math::lerp(SunC
+    float3 rd=math::normalize(raydir);//+float3(0,math::exp(0.1*CloudAltitude-raydir.y*8)*(1-raydir.y),0);
+    // float3 p_start=rd/rd.y;
+    float y_start=math::exp2(CloudAltitude*0.1);
+    float y_end=math::exp2(CloudAltitude*0.1)+math::exp2(CloudHeight*0.1);
+   
+
+    float3 p_start=RayStartOffset*y_start*rd/rd.y+campos;
+    float3 pl_start=y_start*rd/rd.y+campos;
+    
+    float3 p_end=y_end*rd/rd.y+campos;
+
+    // p_start=campos;
+    // p_end=p_start+rd*8/(.1+math::abs(rd.y));
+
+    float3 r_step=(p_end-p_start)/float(iter);
+
+    float dpos=math::frac(27*math::length(math::sin(rd*1413)));
+    // dpos=0.5;
+    float3 p=p_start+1*r_step*0.0005/float(iter)+r_step*CloudDither*(dpos);
+    r_step*=math::exp2(0.2*CloudDither/rd.y*0.1*(math::frac(51*math::length(math::sin(rd*2493)))-0.5));
+    color c_acc=color(0);
+    // float d_acc=0;
+    // float dmax= 1;
+    float loopdebug=0;
+    float sa=-math::asin(math::dot(rd,sundir))/math::acos(-1)+0.5;
+    float sy=math::sin(Elevation*math::PI/180);
+    
+    float tr_acc=1;
+    float z_acc=math::length(p-campos)*1;
+    float amb_acc=0;
+    // float edge_acc=0;
+    // z_acc=math::log2(z_acc);
+    // z_acc=math::log2(math::length(p));
+
+    color wc=color(math::exp2(-float3(-1,0,1)*-8*0.1));
+    float ma=-math::asin(math::dot(rd,moondir))/math::acos(-1)+0.5;
+
+
+
+    //rework this:
+    // sa=ma;
+    // sa=math::lerp(sa,ma,math::smoothstep(-3,-7,Elevation));
+    if(MoonEnabled)sa=math::lerp(ma,sa,math::smoothstep(-7,-3,Elevation));
+
+    // color lightcol=SunColor*linstep(-3,0.25,Elevation);// *(1+.1/(.01+sa));
+    color lightcol=GetSunColor(Elevation,p_end.y,CloudAmbientFog,CloudAmbientFogShaper);
+    // color lightcol=
+    // color mooncol=color(.0001)*MoonColor*linstep(-3,-8,Elevation)*(.3+.3/(.02+ma)+.03/(.02+ma*ma))*math::pow(math::saturate(moondir.y),0.7);
+    color mooncol=color(.0005)
+    *8*math::luminance(GetSunColor(180*math::asin(moondir.y)/math::acos(-1.0),p_end.y,CloudAmbientFog,CloudAmbientFogShaper))
+    *linstep(-3,-8,Elevation)
+    *math::pow(math::saturate(moondir.y),0.7)
+    *MoonColor;
+    
+    if(MoonEnabled)lightcol=lightcol+mooncol;
+    
+    // *(0.1+MoonEnabled*MoonColor*0.1*math::pow(math::saturate(moondir.y),.7));
+    float3 shadowdir=(Elevation>-3||!MoonEnabled)?sundir:moondir;
+    // shadowdir=moondir;
+    // color c_acc2=color(0);
+    float S=math::exp2(CloudScattering*0.1);
+    float extn=math::exp2(CloudExtinction*0.1);
+
+    for(int i=0;i<iter;i++){
+        color sunlight=lightcol;
+        sunlight=GetSunColor(Elevation,p.y,CloudAmbientFog,CloudAmbientFogShaper);
+        if(MoonEnabled)sunlight=sunlight+mooncol;
+        float lf=float(i+0.5)/float(iter);
+        // p+=r_step;//*(tr_acc>0.5?1:1);
+        p+=r_step*(tr_acc>0.5?1:1);
+        // p=math::lerp(p_start,p_end,lf);
+        float2 cf=CloudFunction(p, dpos,campos,
+            // Latitude,SHA,Declination,
+            CumulusEnabled,
+            CloudScaleExp,
+            CloudHeight,
+            CloudAltitude,
+            CumulusLevels,
+            CumulusLevelGain,
+            CumulusLevelScale,
+            CumulusDistortShaper,
+            CumulusBaseShaper,
+            CumulusMorphFactor,
+            CumulusNoiseShaper,
+            CloudCoverage,
+            CloudCoverageTilt,
+            CloudCoverageFade,
+            CloudCoverageCurveA,
+            CloudCoverageCurveB,
+            
+            CloudDensityExp,
+            CloudDensityClamp,
+            CloudDensityTilt,
+            CloudDensityFade,
+            CloudDensityCurveA,
+            CloudDensityCurveB,
+
+            CloudDistanceToDensity,
+            CloudDistanceToCoverage,
+            // CloudPhaseTilt,
+            CloudPhaseTilt*(y_end-y_start),
+            // CloudLODTilt,
+
+            CloudFogEnabled,
+            CloudFogDensityExp,
+            CloudFogShape,
+            RaymarchShaper,
+            anim_time,speed_phase,speed_motion,speed_scroll_u,speed_scroll_v
+            
+        );
+
+        if(p.y>y_end)break;
+        //sun shadow
+        float tr_sun=1;
+        float4 tr_sv=1;
+        // int lgt_iter=tr_acc>0.5?CloudShadowSteps:math::max(1,CloudShadowSteps/2);
+        int lgt_iter=CloudShadowSteps;
+        float acc_sun=0;
+        float3 sps=p;
+        // sps+=(pl_start.y-11>p.y?1:0)*-shadowdir*(pl_start.y-p.y)/math::max(0.01,shadowdir.y);
+        // sps+=(pl_start.y>p.y?1:0)*shadowdir;
+        float ts_start=1./math::max(.0000001,shadowdir.y)*math::max(0,pl_start.y-p.y);
+        float ts_end=1./math::max(.0000001,shadowdir.y)*math::max(0,y_end-p.y);
+        //limit shadow length
+        ts_end=ts_start+math::normalize(ts_end-ts_start)*math::min(CloudShadowDistance+0*0.1*math::pow(math::length(p),1.0),math::length(ts_end-ts_start));
+        sps+=shadowdir*ts_start*0.5;
+        for(int j=0;j<lgt_iter;j++){
+            // float sd=(float(j)+CloudShadowBias*math::length(p));
+            float sd=(float(j)+0.0001);
+            float shadowdither=1*(math::frac(23*math::length(math::sin(rd*1517+float(j)*0.3)))-0.5);
+            // float se=math::length(p)*(.1+math::length(float2(sundir.x,sundir.z)));
+            // se=math::pow(math::length(p),0.2)/(.1+math::abs(sundir.y));
+            float se=1.0;
+            float3 sp=sps;
+            // float sl=(
+            // math::exp2(CloudShadowDither*shadowdither)*(math::exp2(sd)-1+sd*1)*math::exp2(CloudShadowDistance*0.1)*math::pow(se,0.5)+
+            // math::exp2(CloudShadowDither*shadowdither)*CloudShadowBias*0.01*math::pow(se,0.1)
+            // );
+            // sl/=ts_end;
+            // sl=sl/(1+sl);
+            // sl*=ts_end;
+            //shadowdir*math::max(math::length(p-campos),math::length(pl_start-campos))+
+            float sf=(float(j)+shadowdither)/math::max(1,1+float(lgt_iter));
+            float sl=math::lerp(ts_start,ts_end,sf);
+            // sl=j==0?CloudShadowBias*math::exp2(-CloudShadowDither*shadowdither):sl;
+            // sl=j==0?CloudShadowBias*math::exp2(-(shadowdither-0.5)*math::exp2(CloudShadowDither*0.1)):sl;
+            float sb=1+.001*cf.x;
+            sl=j==0?sb*CloudShadowBias*(.4+sa)/expc(-(shadowdither-0.5),math::exp2(CloudShadowDither*0.1)):sl;
+            
+            sp=sp+
+            shadowdir*sl;
+
+            float zs=math::length(p-sp);
+            // float zb=CloudShadowExp*.01*math::max(0,math::length(p-sp)*0.01-3);
+            // zb+=zb*7.1*linstep(.1,0,shadowdir.y);
+            // zb/=.01+linstep(0,0.9,shadowdir.y);
+            float2 cfs=CloudFunction(sp,dpos,campos,
+                // Latitude,SHA,Declination,
+                CumulusEnabled,
+                CloudScaleExp,
+                CloudHeight,
+                CloudAltitude,
+                // math::max(1,CumulusLevels-int(math::max(0,float(CumulusLevels)-1)*sf*sf*2)),
+                math::max(1,CumulusLevels-math::max(0,j-1)),
+                CumulusLevelGain,
+                CumulusLevelScale,
+                CumulusDistortShaper,
+                CumulusBaseShaper,
+                CumulusMorphFactor,
+                CumulusNoiseShaper,
+                CloudCoverage,
+                CloudCoverageTilt,
+                CloudCoverageFade,
+                CloudCoverageCurveA,
+                CloudCoverageCurveB,
+                
+                CloudDensityExp,
+                CloudDensityClamp,
+                CloudDensityTilt,
+                CloudDensityFade,
+                CloudDensityCurveA,
+                CloudDensityCurveB,
+
+                CloudDistanceToDensity,
+                CloudDistanceToCoverage,
+
+                // CloudPhaseTilt,
+                CloudPhaseTilt*(y_end-y_start),
+
+                // CloudLODTilt,
+
+                CloudFogEnabled,
+                CloudFogDensityExp,
+                CloudFogShape,
+                RaymarchShaper,
+                anim_time,speed_phase,speed_motion,speed_scroll_u,speed_scroll_v
+            );
+
+            // tr_sun*=math::exp2(-cfs.x*math::exp2(CloudShadowFactor*0.1)*(1+sd*CloudShadowExp));
+            // tr_sun*=math::exp2(-cfs.x*cfs.x*math::exp2(CloudShadowFactor*0.1)*(1-math::exp2(-math::pow(4.0/(1.0+math::length(p-sp)),(CloudShadowExp*0.1)))));
+            // tr_sun*=math::exp2(-cfs.x*math::exp2(CloudShadowFactor*0.1)*(1-math::exp2(-math::pow(4.0/(1.0+math::length(p-sp)),(CloudShadowExp*0.1)))));
+            // tr_sv*=math::exp2(-cfs.x*math::exp2(CloudShadowFactor*0.1*float4(1)+float4(-1.5,-0.5,0.5,1.5)*2)*(1-math::exp2(-math::pow(4.0/(1.0+math::length(p-sp)),(CloudShadowExp*0.1)))));
+            float z=math::length(p-sp);
+            float sh=10*(math::exp2(-(z-CloudLightCurve.y)*.01*math::exp2(CloudLightCurve.x*0.1)));
+            sh=sh/(1+sh);
+            sh=math::lerp(CloudLightCurve.z,CloudLightCurve.w,sh);
+            // sh=math::log2(expc(sh-.5,math::exp2(CloudLightCurve.w*.1)));
+            // sh=CloudLightCurve.w*(1-sh);
+
+            // tr_sv*=math::exp2(-(cfs.x*math::exp2(CloudShadowFactor*0.1*float4(1)+sh*float4(1)+float4(-1,0,1,2)*3+math::pow(0*math::length(p-sp)*CloudShadowExp*0.01,2)))/math::max(1,1+float(lgt_iter)));
+            tr_sv*=math::exp2(-(cfs.x*math::exp2(CloudShadowFactor*0.1*float4(1)+0*sh*float4(1)+float4(-1,0,1,2)*3))/math::max(1,0+math::exp2(sh)+float(lgt_iter)));
+            // float od=cfs.x;
+            // acc_sun+=(1+.3/sa+.03/sa/sa)*tr_sun*
+            // S*(1-math::exp2(-extn*od))/extn;
+
+            if(sp.y>y_end)break;
+        }
+
+        // cf.x=cf.x/rd.y;
+        // cf.x=cf.x/rd.y;
+
+
+        // float od=cf.x/rd.y; 
+        float od=cf.x/rd.y; 
+        // edge_acc+=(1-math::exp2(-od))*2*tr_acc;
+        // c_acc+=(c_ambient_constant+nightamb)*0.1*S*(1-math::exp2(-extn*od))/extn;
+        // c_acc+=lightcol*tr_sun*tr_acc*S*(1-math::exp2(-extn*od))/extn
+        // *(1+expc(.5-sa,math::exp2(CloudLightCurve2.x*0.1+sa*CloudLightCurve2.y*0.1)))
+        // ;
+        // color c_lf=color(1)*math::exp2(CloudLightCurve2.y*(lf-0.5));
+        // color c_lf=color(1)*expc(1-math::abs(lf-0.5)*2,math::exp2(CloudLightCurve2.z*0.1));
+        color c_lf=color(1)*expc((lf-0.5)*2,math::exp2(CloudLightCurve2.z*0.1));
+        c_lf=color(1)*math::pow(lf,CloudLightCurve2.z*0.1);
+        // c_lf+=color(1,1,0)*math::pow(1-lf,3);
+        c_lf=math::lerp(color(1),c_lf,CloudLightCurve2.y);
+
+        color c_sh=color(1);
+
+        float4 shv=tr_sv*math::exp2(CloudShadowCurve*0.1);
+        // shv.y/=(1+(shv.x)*0.3);
+        // shv.z/=(1+(shv.y+shv.x)*0.3);
+        // shv.w/=(1+(shv.z+shv.y+shv.x)*0.3);
+        // shv*=sigm4((math::log2(cf.x)-CloudEdgeCurve.x)*CloudEdgeCurve.y*float4(1)-float4(-1,0,1,2)*2);
+        float edgefader=sigm((math::log2(cf.x)-CloudEdgeCurve.x)*CloudEdgeCurve.y);
+        shv.z*=edgefader;
+        shv.w*=edgefader;
+
+
+        // shv/=float4(1)+float4(0,(shv.x)*0.3,(shv.y+shv.x)*0.3,(shv.z+shv.y+shv.x)*0.3);
+        // c_sh*=1*math::dot(tr_sv,math::exp2(CloudShadowCurve*0.1));
+        c_sh*=1*math::dot(shv,float4(1));
+        // float de=sigm((math::log2(cf.x)-CloudLightCurve2.z)*1.6);
+
+        c_acc+=sunlight*tr_acc*c_sh*S*(1-math::exp2(-extn*od))/extn
+        *linstep(.01,0.1,shadowdir.y)
+        // *(1+expc(.5-sa,math::exp2(CloudLightCurve2.x*0.1+sa*CloudLightCurve2.y*0.1)))
+        ;
+        // c_acc+=CloudLightCurve2.z*color(1)*(c_ambient_constant+nightamb)*10*math::pow(1-lf,.5+cf.x)*tr_acc*(cf.x+28*cf.x/(1+2*cf.x));
+
+        //ambient texture
+        c_acc+=c_lf*(sunlight+.2*(nightamb+c_ambient_constant))*tr_acc*CloudLightCurve2.w*(.2+math::exp2((1-lf)*(1-lf)*4-cf.x*1.3-0.101*cf.x*cf.x))*S*(1-math::exp2(-extn*od))/extn;
+        //silverlining
+        c_acc+=sunlight*tr_acc
+            /math::abs(shadowdir.y)
+            // *linstep(.01,0.1,shadowdir.y)
+            *S*(1-math::exp2(-extn*od))/extn
+            // *tr_sv.z*tr_sv.y*(.2+tr_sv.w)
+            *math::exp2(CloudLightGlow*0.1)
+            *(expc(.5-sa,math::exp2(CloudLightCurve2.x*0.1)))
+            *tr_sv.x*(.01+tr_sv.y)*(.02+tr_sv.z)*(.1+tr_sv.w)
+            
+            *1.81/(.01+math::pow(math::smoothstep(0,.025,sa),2)*.0105+math::max(0,sa-.005));
+        if(CloudFogEnabled){
+            float dd=math::exp2(-(p.y-math::exp2(CloudAltitude*0.1)*0.8)*CloudFogShape*0.01+CloudFogDensityExp*0.1+math::frac(8*math::length(math::frac(p*28))))
+            // /math::pow(math::max(.01,rd.y),.5)
+            // /math::pow(math::max(.01,p.y*0.1),.5)
+            // *expc(.5-sa,-2+18*linstep(.2,0,sundir.y))
+            // *math::length(p)*0.1
+            // *math::pow(math::length((p-campos)*float3(1,0,1))*0.1,.8)
+            *math::pow(math::length((p-campos)*float3(1,0.5,1))*0.1,.8)
+            // *(1-.95*math::exp2(-.001*math::length((p-campos)*float3(1,0,1))))
+            *(1-.95*math::exp2(-.001*math::length((p-campos)*float3(1,1,1))))
+            // *math::exp2(21*math::dot(math::normalize(p-campos),math::normalize(p-campos+shadowdir)))
+            
+            // *linstep(.01,0.2,shadowdir.y)
+            *math::pow(linstep(y_end,0,p.y),0.5)
+            ;
+            cf.x+=288*dd/(1+dd*0.1);
+            // c_acc+=lightcol*tr_acc*22221*(tr_sun>.99999)*dd/(1+dd);
+            // c_acc+=lightcol*tr_acc*22221*tr_sun*dd/(1+dd);
+            // color wv=rd.y*math::exp2(2*color(1,0,-1)*math::exp2(-3+.001*math::length((p-campos)*float3(1,1,1))));
+            float sy=math::max(.0001,.0001+shadowdir.y);
+
+            c_acc+=color(0)
+
+            // +.101*tr_acc*(c_ambient_constant+nightamb)*math::exp2(-1*linstep(0,y_end,p.y))*math::pow(math::length((p-campos)*float3(1,1,1))*0.1,.5)
+            // +CloudAmbientFogTint*lightcol*tr_acc*222221
+            +CloudAmbientFogTint*sunlight*tr_acc*222221
+            
+            *math::exp2(-.03/sy)/sy
+            
+
+            *math::pow(linstep(.000001,0.001,shadowdir.y),.5)
+            // *math::exp2(-3*wv-.01/wv)*math::pow(math::length((p-campos)*float3(1,1,1))*0.1,.8)
+            // *math::pow(linstep(.001,0.1,shadowdir.y),.5)
+            // *math::exp2(-.005/math::max(.001,shadowdir.y))
+            // *math::pow(tr_sv.x*tr_sv.z,1)
+            *shv.z
+            *dd/(1+dd*0.1)
+            *(1+.3/(.04+sa));
+        }
+        
+        //light pollution at night
+        if(PollutionEnabled){
+            c_acc+=
+            .99*PollutionFunction(p-campos,false,PollutionColor,PollutionPosition,PollutionShaper)
+            *math::exp2(1.0-3.0*lf)
+            *S*(1-math::exp2(-extn*od))/extn
+            *tr_acc
+            *sigm((math::log2(cf.x)-CloudEdgeCurve.x)*CloudEdgeCurve.y+2.0)
+            ;
+            }
+        // float poldepth=0.001*math::length(p-campos-PollutionPosition);
+        // c_acc+=PollutionColor
+        // *S*(1-math::exp2(-extn*od))/extn
+        // *260
+        // // *cf.x*0.0001/(1+cf.x*0.0001)
+        // // *(1+2*cf.x*0.00001/(1+cf.x*0.00001))
+        // // *(1-(1-math::exp2(-0.1*PollutionShaper.x*poldepth))*linstep(y_start,y_end,p.y)*cf.x*0.0001/(1+cf.x*0.0001))
+        // // *(1+(1-math::exp2(-0.01*PollutionShaper.x*poldepth))*1.1*(1-cf.x*0.0001/(1+cf.x*0.0001)))
+        // *tr_acc
+        // // *math::exp2(-PollutionShaper.x*poldepth+PollutionShaper.y*0.1)
+        // *(math::exp2(-PollutionShaper.x*poldepth)+0.2*math::exp2(-0.1*PollutionShaper.x*poldepth))
+        // *math::exp2(PollutionShaper.z*0.1)
+        // *math::exp2(PollutionShaper.y*0.1-0*linstep(y_start,y_end,p.y))/(1+poldepth);
+
+
+        // c_acc+=lightcol*tr_acc*(math::frac(p.z*0.01)<.95)*22221*(tr_sun>1-math::exp2(-CloudFogShape*.1))*math::exp2(CloudFogDensityExp*0.1);
+
+        if(LightningEnabled){
+            // float2 cf=float2(0.0001);
+            float3 ps=p;
+            ps.y=math::exp2(CloudAltitude*0.1)+math::exp2(CloudHeight*0.1)*0.15;
+            float2 cft=false?CloudFunction(ps,dpos,campos,
+                // Latitude,SHA,Declination,
+                CumulusEnabled,
+                CloudScaleExp,
+                CloudHeight,
+                CloudAltitude,
+                3,
+                CumulusLevelGain,
+                CumulusLevelScale,
+                CumulusDistortShaper,
+                CumulusBaseShaper,
+                CumulusMorphFactor,
+                CumulusNoiseShaper,
+                CloudCoverage,
+                CloudCoverageTilt,
+                CloudCoverageFade,
+                CloudCoverageCurveA,
+                CloudCoverageCurveB,
+                
+                CloudDensityExp,
+                CloudDensityClamp,
+                CloudDensityTilt,
+                CloudDensityFade,
+                CloudDensityCurveA,
+                CloudDensityCurveB,
+
+                CloudDistanceToDensity,
+                CloudDistanceToCoverage,
+
+                // CloudPhaseTilt,
+                CloudPhaseTilt*(y_end-y_start),
+                // CloudLODTilt,
+
+                CloudFogEnabled,
+                CloudFogDensityExp,
+                CloudFogShape,
+                RaymarchShaper,
+                anim_time,speed_phase,speed_motion,speed_scroll_u,speed_scroll_v
+            ):float2(1,0);
+            float flashtime=anim_time*math::exp2(LightningSpeed*0.1);
+            float3 prt=float3(p.x,p.y,p.z)-campos;
+
+    prt=float3(prt.x,-prt.z,prt.y);
+    prt=rY(prt,Latitude/360.0);
+    prt=rX(prt,-SHA/360.0);//-DayOfYear/365.0);
+    prt=rY(prt,-Declination/360.0);
+    prt=float3(prt.z,prt.x,prt.y);
+
+            prt=p;
+            // float3 flashpos=p;
+            // float3 flashpos=float3(p.x,p.y,p.z)-campos;
+            float3 flashpos=prt;
+
+            float fq=.012*math::exp2(LightningShaper2.y*0.1);
+            // flashpos+=math::sin(float3(p.y,p.z,p.x)*fq+float3(flashtime*0,0,0))*LightningShaper2.z*.97*float3(1,1*math::exp2(LightningShaper.z*0.1),1)/fq;
+            flashpos+=math::sin(float3(prt.y,prt.z,prt.x)*fq)*LightningShaper2.z/fq;
+            flashpos+=math::sin(float3(prt.y,prt.z,prt.x)*fq)*LightningShaper2.z/fq;
+            flashpos+=math::sin(float3(prt.y,prt.z,prt.x)*fq)*LightningShaper2.z/fq;
+
+            flashpos=float3(flashpos.x,flashpos.y*math::exp2(LightningShaper.z*0.1)+0.5,flashpos.z);
+            // flashpos.y+=(math::frac(flashtime)-0.5)*34.6;
+            
+            // flashpos.y+=cf.x*84;
+            float flashscale=math::exp2(LightningScale*0.1);
+            // float3 flashpos=p;
+            // flashpos=flashpos+math::sin(float3(3,5,7)*math::floor(flashtime))*float3(1,0,1);
+            flashpos+=float3(0.5,0,0.5);
+            flashpos-=float3(0.5);
+            if(LightningShaper2.x<0.5)flashpos=rY(flashpos,math::sqrt(2)*math::floor(flashtime*2.0));
+            if(LightningShaper2.w<0.5)flashpos=float3x3(0.6907,0.0679,-0.7199,0.2884,0.8871,0.3604,0.6631,-0.4566,0.5932)*flashpos;
+            flashpos*=flashscale;
+            flashpos+=float3(0.5);
+
+            // flashpos.z=0.5;
+            // 
+            // 
+            float flashrand=math::frac(math::length(math::sin(math::floor(flashpos))));
+            // flashpos.y+=flashscale*(cf.y-0.5)*-31.34*0*math::exp2(-6*math::frac(flashrand*77));
+            
+            float flashpillow=linstep(.5,0,math::abs(math::frac(flashpos.x)-0.5))
+            *linstep(.5,0,math::abs(math::frac(flashpos.y)-0.5))
+            *linstep(.5,0,math::abs(math::frac(flashpos.z)-0.5));
+
+            // flashpos.y=0.5;
+
+            float flashdist=math::length(math::frac(flashpos)-float3(0.5));
+
+            float flashtime0=flashtime*2.0;
+            flashtime+=flashrand*7;
+            // flashpos.y+=math::sin(2.77*math::floor(flashtime*1.32))*0.2;  
+
+            // c_acc+=tr_acc*(math::pow(cf.x*.002,0.25)+cf.x*.002)*5*0.42*math::exp2(-cf.x*.02*LightningFactor)*LightningFactor*LightningColor*math::exp2(color(0,1,2)*0.0-3*math::exp2(-cf.x*0.2)-math::length(p-campos)*0.003+1-math::frac(flashtime*1.32)*2-math::frac(flashtime)*5*math::exp2(flashrand*3))*.01/math::pow(flashdist,2)
+            // *flashpillow*math::exp2(-1*math::pow(1-flashpillow,3))
+            // // *linstep(0.5,0,flashdist)
+            // ;
+            // c_acc+=tr_acc
+            // *math::exp2(LightningFactor*0.1)*LightningColor*math::exp2(-math::length(p-campos)*0.003+1-math::frac(flashtime*1.32)*2-math::frac(flashtime)*5*math::exp2(flashrand*3))*.01/math::pow(flashdist,2)
+            // *flashpillow*math::exp2(-1*math::pow(1-flashpillow,3))
+            // // *linstep(0.5,0,flashdist)
+            // ;
+
+            float rdf=(flashtime-1)*3.1*math::exp2(math::frac(flashrand*37)*.4)+flashrand;
+            float dpil=linstep(0.0,0.0005*math::exp2(LightningShaper.y*0.1)+.1*(1-math::exp2(-.00015*math::length(p-campos))),flashdist);
+            
+            float cm=S*(1-math::exp2(-extn*od))/extn;
+            float glow1=1/(.0001+flashdist+flashdist*flashdist*0+.905*(1-linstep(0,.03,cf.x)));
+            glow1*=(1+math::pow(cm,.3)*(.1+lf)*2.4/(.012+cm+cm*cm*3));
+
+            float gpil=(1-lf)*48;
+            gpil=gpil*math::pow(1-lf,math::exp2(LightningShaper.x*0.1));
+
+            color ltint=math::exp2(-.5*math::abs(math::log2(cf.x*0.012+.001)*float3(5)+1.85*float3(-1,0,1)));
+            ltint=color(1);
+            c_acc+=tr_acc*ltint*LightningColor
+            *(.203*linstep(0,.0203,cf.x)+.001+cm+gpil*(1-dpil))
+            *math::exp2(LightningFactor*0.1)
+            *math::exp2(-2*math::normalize(prt).x)
+            // /(.01+math::length(math::normalize(prt)-float3(1,0,0)))
+            // *math::pow(lf,math::exp2(LightningShaper.x*0.1))
+            // *math::exp2(-math::frac(flashtime)*2*math::exp2(flashrand*1)-math::frac((flashtime-1)*1.1*math::exp2(math::frac(flashrand*37)*.2))*6+cm*0-cm*cm*1+(lf-0.5)*LightningShaper.y*0.1*0)
+            *math::exp2(-math::frac(flashtime)*2*math::exp2(flashrand*1)-math::frac(rdf)*3*math::exp2(2*math::sin(flashrand*2*(1.618+math::floor(rdf))))+cm*0-cm*cm*1+(lf-0.5)*LightningShaper.y*0.1*0)
+            
+            /(.0001+math::abs(rd.y))*math::exp2(-.1/(.0001+math::abs(rd.y)))
+            *flashpillow
+            // *(1-math::exp2(-.008*math::length((p-campos)*float3(1,1,1))))
+            *1/(.01+math::frac(flashtime))
+            *(1-math::frac(flashtime0))
+            // *1./(.0001+math::abs(prt.y)*.03+prt.y*prt.y*0.05+.8*math::abs(-1+2*math::frac(0.5+math::atan2(prt.x,prt.z)*12/math::PI)))
+            // /(.001+.001*math::length(p-campos))
+            *(glow1+gpil*math::exp2(-dpil*7)*.1/(.000001+dpil*2))*linstep(0.0001,.401,cft.x)
+            // *1/(.001+math::length(math::frac(p*flashscale)-float3(0.5)))
+            ;
+            // c_acc+=88*linstep(.201,0.0,flashdist);
+
+        }
+        z_acc=math::lerp(z_acc,math::length(p-campos),tr_acc);
+        tr_acc*=math::exp2(-cf.x);
+
+        loopdebug=float(i)/float(iter);
+        if(tr_acc<tr_min){break;}
+
+    }
+    tr_acc=math::max(0,tr_acc-tr_min);
+    color c_bg=c_clear+c_stars+nightcol;
+    
+    // if(AuroraEnabled){
+    //     float3 a_start=p_end;
+    //     float3 a_end=181.4*rd/rd.y+a_start;
+    //     float3 a_step=a_end-a_start;
+    //     float3 av=a_start+a_step*(dpos);
+    //     av+=float3(dpos*.8,0,0);
+    //     av*=float3(math::exp2(AuroraScale*0.1-8),1,math::exp2(AuroraScale*0.1-8));
+    //     float cc=summed_flow_noise4(
+    //         pos:float2(av.x,av.z)*0.42,
+    //         time:anim_time*-10.1+expc(.5-dpos,3)*0.002,
+    //         iterations:4,
+    //         abs_noise:true,
+    //         // weight_factor:0.4+.4*rd.y,
+    //         // pos_factor:2.20,
+    //         weight_factor:0.63,
+    //         pos_factor:2.15,
+    //         v_progressive_offset:0,
+    //         morph_factor:0.15
+    //         // v_progressive_offset:anim_time*speed_motion*6*math::exp2(CirrusScaleExp*0.1)
+    //     );
+        
+    //     float2 ap=float2(av.x,av.z)*0.1002;
+    //     // ap*=math::exp2(AuroraScale*0.1-8);
+    //     ap+=math::sin(float2(ap.y,ap.x)+float2(0,dpos*0.13));
+    //     ap+=math::sin(float2(ap.y,ap.x)*0.7);
+    //     ap+=math::sin(float2(ap.y,ap.x)*10.7+float2(dpos*0.13,0))*.1;
+    //     //math::exp2(float3(1,0,-1)*0.0*expc(.5*math::sin(ap.y*8),5))
+    //     c_bg+=AuroraColor*color(1)*math::saturate(tr_acc)*1*expc(math::abs(math::frac(ap.x)*2-1)-0.5,22*math::exp(-.2/(.01+rd.y)))*expc(cc,5)*expc(0.5-dpos,4)*(1+expc(0.5-dpos,9));
+    // }
+
+
+    //cirrus layer
+    color c_cirrus=color(0);
+    if(CirrusEnabled){
+        float cc=0;
+        float2 cirr= CirrusFunction(campos,rd,
+            anim_time,1,y_end,true,0.0062/(.05+rd.y),
+            CirrusSpeed,
+            CirrusEnabled,
+            CirrusAltitude,
+            CirrusScaleExp,
+            CirrusShaper,
+            CirrusShaper2,
+            CirrusBlurShaper,
+            CirrusFactor,
+            CirrusDensity,
+            CirrusCoverage,
+            CirrusThickness,
+            CirrusLevels,
+            CirrusLevelScale,
+            CirrusLevelGain,
+            CirrusFade
+            );
+        cc=cirr.x/(.1+rd.y);
+        cc=cc/(1.0+cc);
+        float cirrus_ap=cc*math::exp2(CirrusFactor*0.1);
+        cirrus_ap=cirrus_ap/(1+cirrus_ap);
+        // color cirruscol=math::lerp(lightcol,color(math::luminance(lightcol)),0.0);
+
+        // float od=cc/(.3+rd.y);
+
+        // float ssun=1+CirrusLightShaper.x*math::exp2(-sa*10*CirrusLightShaper.y-sa*sa*10*CirrusLightShaper.z);
+        // c_bg=c_bg*math::exp2(-extn*od)+
+        // // (lightcol*math::exp2(CloudLightGlow*0.1)*ssun*math::exp2(CirrusFactor*0.1)+c_ambient_constant)*math::exp2(CloudLightFactor*0.1)
+        // (lightcol*math::exp2(CloudLightGlow*0.1)*ssun*0.3+0*(c_ambient_constant+nightamb))
+        // *math::exp2(CirrusFactor*0.1)*math::exp2(CloudLightFactor*0.1)
+        
+        // *S*(1-math::exp2(-extn*od))/extn;
+        // float cirrus_sf=1+math::exp2(CirrusLightShaper.z*0.1)/sa+math::exp2(CirrusLightShaper.w*0.1)/sa/sa;
+        // float cirrus_sf=1+math::exp2(-sa*cirrus_ap*math::exp2(CirrusLightShaper.w*0.1))*math::exp2(CirrusLightShaper.z*0.1)/sa;
+        // float cirrus_sf=1+math::exp2(-sa*cirrus_ap*math::exp2(CirrusLightShaper.w*0.1))*math::exp2(CirrusLightShaper.z*0.1)/sa;
+        float cirrus_sf=1+expc(.5-sa,math::exp2(cc*CirrusLightShaper.w*0.1))+expc(.5-sa,math::exp2(CirrusLightShaper.z*0.1));
+        cirrus_sf=math::min(cirrus_sf,1000000);
+        // float cirrus_sf2=cirrus_sf;
+        // float clt=summed_flow_noise4(
+        //     pos:float2(rd.x, rd.z)*3.0/rd.y,
+        //     time:0,
+        //     iterations:2,
+        //     abs_noise:true,
+        //     // lod:lod,
+        //     // weight_factor:CumulusLevelGain,
+        //     weight_factor:1.0,
+        //     // *(1+math::pow(1-lf,4)*.5+.3*math::exp2(math::pow(math::abs(lf-0.5),4))),
+        //     pos_factor:2.0,
+        //     v_progressive_offset:0.0);
+        // clt=math::exp2(clt*2);
+        // float clt=math::exp2(cirr.y*CirrusLightShaper.w);
+        float clt=1;
+        // clt=clt/(1+clt*0.5);
+        c_bg=
+        c_bg*(1-cirrus_ap)
+
+        // +clt*210.0*PollutionColor*cirrus_ap*cirrus_sf*math::exp2(CirrusLightShaper.x*0.1)
+        // *math::exp2(-PollutionShaper.x*0.001*math::length(p-campos)+PollutionShaper.y*0.1)
+        // +clt*.5*cirrus_ap*cirrus_sf*math::exp2(CirrusLightShaper.x*0.1)
+        // *PollutionFunction(p-campos,false,PollutionColor,PollutionPosition,PollutionShaper)
+        +(
+        PollutionEnabled?(
+            clt*.5*cirrus_ap*cirrus_sf*math::exp2(CirrusLightShaper.x*0.1)
+            *PollutionFunction(p-campos,false,PollutionColor,PollutionPosition,PollutionShaper)
+        ):color(0)
+        )
+        +clt*(1-cirrus_ap)*lightcol*1.0*cirrus_ap*cirrus_sf*math::exp2(CirrusLightShaper.x*0.1)
+        +clt*(c_ambient_constant+nightamb)*cirrus_ap*2
+        +clt*lightcol*cirrus_ap*cirrus_sf*math::exp2(CirrusLightShaper.y*0.1);
+
+    }
+
+    c=color(0);
+    // c+=c_bg*math::saturate(tr_acc)+c_ambient_constant*math::saturate(1-tr_acc)*math::pow(amb_acc,0.5);
+    // c+=c_bg*math::saturate(tr_acc)+(c_ambient_constant+nightamb)*math::saturate(1-tr_acc)*math::exp(-1+edge_acc/(1+edge_acc));
+    c+=c_bg*math::saturate(tr_acc)+(c_ambient_constant+nightamb)*math::saturate(1-tr_acc);
+
+    // c+=(lightcol+nightamb*0.1)*edge_acc;
+    c_acc=math::min(c_acc,1000000);
+    c+=c_acc*math::exp2(CloudLightFactor*0.1);
+    // c+=nightcol*(1-math::exp2(-z_acc*0.05*math::pow(rd.y,0.5)));
+    // c=c*math::exp2(-z_acc*math::exp2(CloudAmbientFog*0.1)*0.001*math::exp2(color(1,2,3)));
+    
+
+    // color c_contrail=color(0);
+    // if(ContrailEnabled){
+    //     float cc=0;
+    //     float contrail_scale=math::exp2(StarfieldScale*0.1-1);
+
+    //     cc=0;
+    //     c_contrail=color(0);
+        
+    //     for(int i=0;i<ContrailLevels;i++){
+    //         // float3 pc=p+28*float3(math::sin(float(i)),0,math::cos(float(i)*1.37));
+    //         float cspeed=8*math::exp2(ContrailSpeed*0.1+float(i)*0.05);
+    //         float ctime=math::frac((anim_time+6)*cspeed);
+    //         float cseed=math::floor((anim_time+6)*cspeed);
+    //         float3 pc=(rd/rd.y)*math::exp2(ContrailAltitude*0.1);
+    //         float crot=math::sin(cseed*1.3+2.21*float(i))+ContrailWindAngle;
+    //         pc=rY(pc,crot);
+    //         pc.x+=1*math::sin(cseed*2.13+3+1.27*float(i));
+    //         // float cz=pc.z+(ctime-0.5)*318;
+    //         // float cx=pc.x*7/math::pow(math::max(0.0001,cz),0.5)-cc*ContrailNoiseScale*.324*math::pow(math::max(0.0001,cz),1)+cz*cz*ContrailNoiseAmount;
+    //         float cz=pc.z+(ctime-0.5)*318;
+    //         float cx=pc.x*math::exp2(ContrailShape*0.1)/cz;
+    //         // float ct=math::exp2(-cx*cx*8-cc*4*math::pow(math::max(0.0001,cz),0.5))*(cz>0);
+
+    //         cx+=
+    //         r2d(float2(1,0),-crot).y/cspeed*ContrailWindFactor*(
+    //         cz*.001
+    //         +cz*.001*ContrailNoiseAmount*math::length(math::sin(ContrailNoiseScale*.3*r2d(float2(pc.x,pc.z),.3)))
+    //         );
+    //         cx+=cx*math::pow(cz*0.01,0.25)*cc*ContrailDensity;
+
+    //         float ct=math::saturate(cx*8)*math::saturate(1-cx)*(cx>0)*(cx<1)*(cz>0);
+    //         ct*=math::exp2(-cz*0.13*math::exp2(-ContrailLength*0.1));
+    //         ct*=math::exp2(-14*cx*cc/(.5+cz*.5)-cx*4);
+    //         // ct=math::pow(ct,math::exp2(cx-1));
+    //         // ct=ct/(1+ct);
+
+    //         c_contrail+=ContrailTint*lightcol*
+    //         math::exp2(ContrailFactor*0.1-.2/(.01+rd.y))*(1-ctime)*(.1+0.05/(.005+sa))*ct/(0.1+.1*rd.y*rd.y)/(.01+math::pow(rd.y*4,ContrailFade));
+            
+    //     }
+    //     float2 uv=(float2(rd.x,rd.z)/rd.y)*math::exp2(StarfieldScale*0.1);
+    //     uv*=float2(5,0.02);        
+    //     int rndi1=permute_flow2(int(math::floor(uv.x)));
+    //     float rnd1=float(rndi1)/289.0;
+    //     float xd=math::abs(math::frac(uv.x)*2-1);
+    //     float y=math::frac(uv.y+(anim_time+rnd1)*4*math::exp2((rnd1-0.5)*2));
+    //     float f=linstep(1,0,xd)*.1/(xd+math::exp2(-y*118));
+    //     f*=(1-y)*math::exp2(-.04/y-y*144*math::exp2((math::frac(rnd1*3.7)-0.5)*1))*.1/(y+.0001);
+    //     f*=math::smoothstep(0,1,1-xd);
+    //     // c_contrail+=.1/(.001+math::frac(rd.x/rd.y));
+    //     c_contrail+=
+    //     math::exp2(StarfieldFactor*0.1)
+    //     *StarfieldTint*lightcol
+    //     *math::pow(f,0.5+.5*rd.y)
+    //     *8.0/(.5+rd.y);
+    // }
+
+    // c+=c_contrail*math::saturate(tr_acc);
+    
+
+    // float fz=math::pow(z_acc*0.001,0.5)*math::exp2(-tr_acc*4*(.1+rd.y))/math::pow(rd.y,0.61);
+    // fz=z_acc/math::pow(rd.y,0.15);
+    // color c_fog=c_ambient_clear;
+    // c_fog=math::lerp(c_ambient_constant+nightamb,c_ambient_clear+nightamb,1-1*math::exp2(-fz*1.35*math::exp2(CloudAmbientFog*0.1)));
+    // // c_fog*=expc(.5-rd.y,-4+4*(1-math::exp2(-fz*.35*math::exp2(CloudAmbientFog*0.1))));
+    // c_fog*=expcol(color(.5-rd.y),-color(2)+2*(color(1)-math::exp2(-.62*(fz/(1+fz*.001))*math::exp2(0.725*color(-1,0,1))*color(.35)*math::exp2(CloudAmbientFog*0.1))));
+    // // c_fog+=nightamb;
+    // c_fog*=CloudAmbientFogTint;
+
+    // c=c*math::exp2(-fz*0.5*math::exp2(CloudAmbientFog*0.1));
+    // c+=c_fog*(1-math::exp2(-fz*math::exp2(CloudAmbientFog*0.1)));
+
+
+    float3 eye=float3(0,CloudAmbientFogShaper.z,0);
+    float3 endpoint=z_acc*rd;
+    // endpoint.y+=130*(tr_acc>.9);
+    endpoint=(tr_acc<.99)?endpoint:rd*100000*float3(1,.5,1);
+    //*math::exp2(CloudAmbientFogShaper.w*0.1);
+    // c=AtmoFog(c,CloudAmbientFogTint*(lightcol+(c_ambient_constant+nightamb)/(.3+rd.y)),
+
+    color c_fog=AtmoFog(
+        c,
+        // CloudAmbientFogTint*color(1)*math::pow(linstep(-11,2,Elevation),2)+c_ambient_constant+nightamb,
+        // CloudAmbientFogTint*color(1)*math::pow(linstep(-13,5,Elevation),3)+c_ambient_constant+nightamb,
+        // CloudAmbientFogTint*color(1)*math::pow(linstep(-13,27,Elevation)*color(1,1,1),6*color(.8,1,1.2))+0.5*CloudAmbientFogTint*(c_ambient_constant*2+nightamb),
+        CloudAmbientFogTint*GetFogColor(rd,sundir,moondir,MoonEnabled,MoonColor,Elevation,nightamb+c_ambient_constant),
+        // *expc3(float3(.5-sa),float3(.001)),
+        // math::pow(math::luminance(lightcol),0.25),
+        eye,eye+endpoint,
+        CloudAmbientFog-10,
+        CloudAmbientFogShaper
+        );
+
+    // c_fog=GetFogAtmosphere(rd,sundir,z_acc);
+    // c_fog=AtmoFog(
+    //     c_fog,
+    //     CloudAmbientFogTint*color(1)*math::pow(linstep(-11,2,Elevation),2),
+    //     // *expc3(float3(.5-sa),float3(.001)),
+    //     // math::pow(math::luminance(lightcol),0.25),
+    //     eye,eye+endpoint,
+    //     CloudAmbientFog-10,
+    //     CloudAmbientFogShaper
+    //     );
+    // c_fog=c_fog*0.5+0.25*AtmoFog(
+    //     c,
+    //     CloudAmbientFogTint*color(1)*math::pow(linstep(-11,2,Elevation),2),
+    //     // *expc3(float3(.5-sa),float3(.001)),
+    //     // math::pow(math::luminance(lightcol),0.25),
+    //     eye,eye+endpoint,
+    //     CloudAmbientFog-20,
+    //     CloudAmbientFogShaper
+    //     )+0.25*AtmoFog(
+    //     c,
+    //     CloudAmbientFogTint*color(1)*math::pow(linstep(-11,2,Elevation),2),
+    //     // *expc3(float3(.5-sa),float3(.001)),
+    //     // math::pow(math::luminance(lightcol),0.25),
+    //     eye,eye+endpoint,
+    //     CloudAmbientFog-40,
+    //     CloudAmbientFogShaper
+    //     );
+    // c_fog=color(0);
+    // for(int j=0;j<5;j++){
+    //     c_fog+=AtmoFog(
+    //     c,
+    //     CloudAmbientFogTint*color(1)*math::pow(linstep(-11,2,Elevation),2)
+    //     // *expc3(float3(.5-sa),float3(math::exp2(3-2.5*float3(-1,0,1)-CloudAmbientFog*0.1-3*float(j))))
+    //     ,
+    //     // math::pow(math::luminance(lightcol),0.25),
+    //     eye,eye+endpoint,
+    //     CloudAmbientFog+float(j)*math::exp2(float(j)*0.5+3),
+    //     CloudAmbientFogShaper
+    //     )/4.0;
+    // }
+
+    c=
+    // rd.x>0?c:
+    c_fog;
+
+    // c=float3(1,tr_acc>.9,1);
+    // float3 zp=z_acc*rd;
+    // c+=color(0,1,0)*math::frac(zp.x*.006);
+    // c=color(1-math::exp2(-z_acc*math::exp2(CloudAmbientFog*0.1)));
+    // if(sa<.005)c=SunColor*.5/(.001+sa*33);
+
+    float3 cv=float3(c);
+    return float4(cv.x,cv.y,cv.z,z_acc);
+}
+
+float4 suncalc(
+    float TimeOfDay,
+    float Latitude,
+    float Longitude,
+    float Declination,
+    float DayOfYear,
+    bool DeclinationFromDayOfYear
+    ){
+        // SV = Gf.Vec3d(0, -1, 0)
+        // rotDEC = Gf.Rotation(Gf.Vec3d(0, 0, 1), math.degrees(D))
+        // rotSHA = Gf.Rotation(Gf.Vec3d(1, 0, 0), 180 - SHA)
+        // rotLAT = Gf.Rotation(Gf.Vec3d(0, 0, 1), latitude)
+        // SV = rotDEC.TransformDir(SV)
+        // SV = rotSHA.TransformDir(SV)
+        // SV = rotLAT.TransformDir(SV)
+
+        // SEA = math.degrees(math.asin(SV[1]))
+        // AZ = math.degrees(-math.atan2(SV[2], SV[0]))
+    float SHA=(TimeOfDay-12)*360/24;
+    float dec_=Declination;
+
+    float T = math::radians((360 / 365.25) * (math::floor(DayOfYear)+TimeOfDay/24.0));
+    if(DeclinationFromDayOfYear)dec_=-23.45*math::cos(T+math::radians(10));
+    float3 p=float3(0,-1,0);
+    p=rZ(p,dec_/360.);
+    p=rX(p,(180-SHA)/360.);
+    p=rZ(p,Latitude/360.);
+    
+    
+    float Elevation=(math::asin(p.y)/math::acos(-1)/2)*360;
+    float Azimuth=(math::atan2(p.z,-p.x)/math::acos(-1)/2)*360;
+
+
+    return float4(SHA,Azimuth,Elevation,dec_);
+}
+color ApplyMask(color col,float3 rd,
+    uniform float MaskAzimuth = 0 [[ anno::in_group("PostProcess") ]],
+    uniform float MaskElevation = 0 [[ anno::in_group("PostProcess") ]],
+    uniform float MaskFrom = 0 [[ anno::in_group("PostProcess") ]],
+    uniform float MaskTo = 1 [[ anno::in_group("PostProcess") ]],
+    uniform color MaskTint = color(1) [[ anno::in_group("PostProcess") ]],
+    uniform float MaskBlend = 0 [[ anno::in_group("PostProcess") ]]
+    ){
+    float3 v=SunDirection(MaskElevation,MaskAzimuth);
+    float d=math::dot(rd,v);
+    float f=math::smoothstep(0,1,linstep(MaskFrom,MaskTo,d));
+    color c=math::lerp(col,math::lerp(col,color(1),MaskBlend)*MaskTint,f);
+    return c;
+}
+float3 LatLong(float3 pos){
+    // float3 p=float3(rd.x,rd.y,-rd.z);
+    float3 p=float3(0,0,1);
+    float2 UV=float2(pos.x,pos.y)*0.5+float2(0.5,0.5);
+    p=rX(p,-(UV.y-0.5)*0.5);
+    p=rY(p,-UV.x);
+    return p;
+}
+
+export material ProceduralSky (
+    uniform color emissive_color = color(1.0) [[ anno::in_group("PostProcess") ]],
+    uniform float Intensity=1000 [[ anno::soft_range(float(0.0f), float(1.0f)), anno::in_group("PostProcess") ]],
+    uniform float Exposure=-2 [[ anno::in_group("PostProcess") ]],
+
+    uniform float PostSaturation=1.0 [[ anno::soft_range(float(0.0f), float(1.0f)), anno::in_group("PostProcess") ]],
+    // uniform float SaturationExp=0 [[ anno::in_group("PostProcess") ]],
+    uniform float4 PostGamma = float4(0) [[ anno::in_group("PostProcess") ]],
+    uniform color PostTint = color(1) [[ anno::in_group("PostProcess") ]],
+    uniform float EmissiveIntensityClamp = 100000000 [[ anno::in_group("PostProcess") ]],
+    uniform float EmissiveSurfaceClamp = 100000 [[ anno::in_group("PostProcess") ]],
+
+    //ExposureA=7,ExposureB=-3
+    uniform float ExposureA = 0 [[ anno::in_group("PostProcess") ]],
+    uniform float ExposureB = 0 [[ anno::in_group("PostProcess") ]],
+
+
+    uniform float ExposureElevationA = -7 [[ anno::in_group("PostProcess") ]],
+    uniform float ExposureElevationB = -3 [[ anno::in_group("PostProcess") ]],
+    uniform float4 ExposureShaper = float4(0) [[ anno::in_group("PostProcess") ]],
+
+    // uniform bool MaskEnabled = false [[ anno::in_group("PostProcess") ]],
+    // uniform float MaskAzimuth = 0 [[ anno::in_group("PostProcess") ]],
+    // uniform float MaskElevation = 0 [[ anno::in_group("PostProcess") ]],
+    // uniform float MaskFrom = 0 [[ anno::in_group("PostProcess") ]],
+    // uniform float MaskTo = 1 [[ anno::in_group("PostProcess") ]],
+    // uniform color MaskTint = color(1) [[ anno::in_group("PostProcess") ]],
+    // uniform float MaskBlend = 0 [[ anno::in_group("PostProcess") ]],
+    // uniform bool LatLongUnwrap = false [[ anno::in_group("PostProcess") ]],
+
+    // uniform texture_2d blend_texture_A = texture_2d() [[ anno::in_group("PostProcess") ]],
+    // uniform float BlendTextureA = 0 [[ anno::soft_range(float(0.0f), float(1.0f)), anno::in_group("PostProcess") ]],
+    // uniform color BlendTextureATint = color(1) [[ anno::in_group("PostProcess") ]],
+    // uniform texture_2d blend_texture_B = texture_2d() [[ anno::in_group("PostProcess") ]],
+    // uniform float BlendTextureB = 0 [[ anno::soft_range(float(0.0f), float(1.0f)), anno::in_group("PostProcess") ]],
+    
+    // uniform float4 SkyGamma = float4(0) [[ anno::in_group("Atmosphere") ]],
+    uniform float SkySaturation = 1 [[ anno::in_group("Atmosphere") ]],
+    uniform color SkyTint = color(1) [[ anno::in_group("Atmosphere") ]],
+    uniform float SunSaturation = 1 [[ anno::in_group("Atmosphere") ]],
+    uniform color SunTint = color(1) [[ anno::in_group("Atmosphere") ]],
+
+    // float  multiplier = 0.025 [[ anno::in_group("Atmosphere") ]],
+    // uniform color rgb_unit_conversion = color(0.000666667) [[ anno::in_group("Atmosphere") ]],
+    
+
+    float HorizonGlow = 0.0 [[ anno::in_group("Atmosphere") ]],
+    float haze = 0.001 [[ anno::in_group("Atmosphere") ]],
+
+    uniform float sun_disk_intensity = 0.1 [[ anno::in_group("Atmosphere") ]],
+    uniform float sun_disk_scale = 1.0 [[ anno::in_group("Atmosphere") ]],
+    uniform float sun_glow_intensity = 0.03 [[ anno::in_group("Atmosphere") ]],
+    // uniform bool physically_scaled_sun = true [[ anno::in_group("Atmosphere") ]],
+
+    uniform int CloudRaySteps = 25 [[ anno::soft_range(1, 100), anno::in_group("Raymarching") ]],
+    uniform float tr_min = 0.005 [[ anno::in_group("Raymarching") ]],
+    uniform float CloudDither=-1 [[ anno::soft_range(float(0.0f), float(1.0f)), anno::in_group("Raymarching") ]],
+    uniform float RayStartOffset=0.02 [[ anno::soft_range(float(0.0f), float(1.0f)), anno::in_group("Raymarching") ]],
+    uniform float4 RaymarchShaper = float4(0) [[ anno::in_group("Raymarching") ]],
+
+
+    uniform bool UseCloudTime =false [[ anno::in_group("Wind") ]],
+    uniform float CloudTime=0 [[ anno::in_group("Wind") ]],
+    uniform float speed_exp=58.0 [[ anno::in_group("Wind") ]],
+    uniform float speed_phase=0.1 [[ anno::in_group("Wind") ]],
+    uniform float speed_motion = 278.5 [[ anno::in_group("Wind") ]],
+    uniform float speed_scroll_u = 1.0 [[ anno::in_group("Wind") ]],
+    uniform float speed_scroll_v = 53.4 [[ anno::in_group("Wind") ]],
+    uniform float CumulusMorphFactor=0.7739 [[ anno::in_group("Wind") ]],
+    uniform float CirrusSpeed=-45.79 [[ anno::in_group("Wind") ]],
+
+    uniform float SunIntensity=1.0 [[ anno::in_group("Lighting") ]],
+    uniform float GlobalIntensity=1.0 [[ anno::soft_range(float(0.0f), float(10.0f)),anno::in_group("Lighting") ]],
+    uniform float SkyIntensity=1.0 [[ anno::soft_range(float(0.0f), float(30.0f)),anno::in_group("Lighting") ]],
+
+
+    uniform float CloudLightFactor=-15.3 [[ anno::in_group("Lighting") ]],
+    uniform float4 CloudLightCurve=float4(-10, 232, -17.4, 0) [[ anno::in_group("Lighting") ]],
+    uniform float4 CloudLightCurve2=float4(40.8, 1, 0, 0) [[ anno::in_group("Lighting") ]],
+    uniform float4 CloudShadowCurve=float4(31.4, 18.4, 8.6, 19) [[ anno::in_group("Lighting") ]],
+    uniform float4 CloudEdgeCurve=float4(13.9, 1, 0, 0) [[ anno::in_group("Lighting") ]],
+    uniform float CloudScattering=28.0 [[ anno::in_group("Lighting") ]],
+    uniform float CloudExtinction=2.099 [[ anno::in_group("Lighting") ]],
+
+    uniform color CloudAmbientTint=color(0.999) [[ anno::in_group("Lighting") ]],
+    // uniform float CloudAmbientFactor=20 [[ anno::in_group("Lighting") ]],
+    // uniform float CloudAmbientShape=0 [[ anno::in_group("Lighting") ]],
+    uniform float CloudLightGlow=-32.2 [[ anno::in_group("Lighting") ]],
+    
+
+    uniform float CloudAmbientFog=-46.59 [[ anno::in_group("Fog") ]],
+    uniform color CloudAmbientFogTint=color(1) [[ anno::in_group("Fog") ]],
+    uniform float4 CloudAmbientFogShaper=float4(0, 3, -6.5, -36.7) [[ anno::in_group("Fog") ]],
+    uniform bool CloudFogEnabled=true [[ anno::in_group("Fog") ]],
+    uniform float CloudFogDensityExp=-131.55 [[ anno::in_group("Fog") ]],
+    uniform float CloudFogShape=-1.0 [[ anno::in_group("Fog") ]],
+    
+    
+    uniform float CloudShadowFactor=-101.3 [[ anno::in_group("Lighting") ]],
+    uniform float CloudShadowDistance=100.0 [[ anno::in_group("Lighting") ]],
+    uniform float CloudShadowBias=0.8 [[ anno::in_group("Lighting") ]],
+    uniform float CloudShadowExp=0.0 [[ anno::in_group("Lighting") ]],
+    
+    uniform float CloudShadowDither=3.0 [[ anno::in_group("Lighting") ]],
+    uniform int CloudShadowSteps=4 [[ anno::soft_range(1, 10), anno::in_group("Lighting") ]],
+
+    
+    uniform float2 ambient_point = float2(70, 0.229) [[ anno::in_group("Lighting") ]],
+    // uniform float2 ambient_v = float2(8.0,1) [[ anno::in_group("Lighting") ]],
+
+    uniform bool CumulusEnabled = true [[ anno::in_group("Cumulus") ]],
+    uniform int CumulusLevels = 6 [[ anno::soft_range(1, 10), anno::in_group("Cumulus") ]],
+    uniform float CumulusLevelGain=1.72 [[ anno::in_group("Cumulus") ]],
+    uniform float CumulusLevelScale = 2.812 [[ anno::in_group("Cumulus") ]],
+    uniform float4 CumulusDistortShaper=float4(0, 0, 0, 0) [[ anno::in_group("Cumulus") ]],
+    uniform float4 CumulusBaseShaper=float4(0.648, 5.2, -14.3, 2) [[ anno::in_group("Cumulus") ]],
+
+    uniform float CloudScaleExp=70.0 [[ anno::in_group("Cumulus") ]],
+    uniform float CloudHeight=44.9 [[ anno::in_group("Cumulus") ]],
+    uniform float CloudAltitude=39.0 [[ anno::in_group("Cumulus") ]],
+
+
+    
+    uniform float4 CumulusNoiseShaper=float4(-7.038, 0, 3.9, 19.745) [[ anno::in_group("Cumulus") ]],
+    uniform float CloudCoverage=0.225 [[ anno::in_group("Cumulus") ]],
+    uniform float CloudCoverageTilt=0.0 [[ anno::in_group("Cumulus") ]],
+    uniform float CloudCoverageFade=1.0 [[ anno::in_group("Cumulus") ]],
+    uniform float4 CloudCoverageCurveA=float4(-476.4, 20.8, 12, -21) [[ anno::in_group("Cumulus") ]],
+    uniform float4 CloudCoverageCurveB=float4(34.8, 281.525, -28.1, -184.7) [[ anno::in_group("Cumulus") ]],
+
+    uniform float CloudDensityExp=192.6 [[ anno::in_group("Cumulus") ]],
+    uniform float CloudDensityClamp=248.5 [[ anno::in_group("Cumulus") ]],
+    uniform float CloudDensityTilt=0.0 [[ anno::in_group("Cumulus") ]],
+    uniform float CloudDensityFade=1.0 [[ anno::in_group("Cumulus") ]],
+    uniform float4 CloudDensityCurveA=float4(0, 0, 0, 0) [[ anno::in_group("Cumulus") ]],
+    uniform float4 CloudDensityCurveB=float4(0, 0, -3.6, -15.2) [[ anno::in_group("Cumulus") ]],
+    uniform float CloudDistanceToDensity=-1.0 [[ anno::in_group("Cumulus") ]],
+    uniform float CloudDistanceToCoverage=0.009 [[ anno::in_group("Cumulus") ]],
+
+    // uniform float StratusCoverage=0 [[ anno::in_group("Cumulus") ]],
+    // uniform float StratusDensity=0 [[ anno::in_group("Cumulus") ]],
+    // uniform float StratusScaleX=0 [[ anno::in_group("Cumulus") ]],
+    // uniform float StratusScaleZ=0 [[ anno::in_group("Cumulus") ]],
+    // uniform float StratusPhaseY=0 [[ anno::in_group("Cumulus") ]],
+    // uniform float StratusNoiseY=0 [[ anno::in_group("Cumulus") ]],
+    // uniform float StratusThickness=0 [[ anno::in_group("Cumulus") ]],
+    // uniform float StratusDensityClamp=0 [[ anno::in_group("Cumulus") ]],
+
+    uniform float CloudPhaseTilt=1.979 [[ anno::in_group("Cumulus") ]],
+    // uniform float CloudLODTilt=0 [[ anno::in_group("Cumulus") ]],
+    
+    uniform bool CirrusEnabled = true [[ anno::in_group("Cirrus") ]],
+    uniform float CirrusAltitude=38.5 [[ anno::in_group("Cirrus") ]],
+    uniform float CirrusScaleExp=-87.40 [[ anno::in_group("Cirrus") ]],
+    uniform float4 CirrusShaper=float4(31.2, 22.2, -294.3, 4.5) [[ anno::in_group("Cirrus") ]],
+    uniform float4 CirrusShaper2=float4(51.3, 49.9, 67.6, 2.3) [[ anno::in_group("Cirrus") ]],
+    uniform float4 CirrusBlurShaper=float4(13.793, -109.926, -6.9, 25.4) [[ anno::in_group("Cirrus") ]],
+    uniform float4 CirrusLightShaper=float4(64.2, 31.3, 52.4, 66.4) [[ anno::in_group("Cirrus") ]],
+    
+    uniform float CirrusFactor=54.0 [[ anno::in_group("Cirrus") ]],
+    uniform float CirrusDensity=-1.904 [[ anno::in_group("Cirrus") ]],
+    uniform float CirrusCoverage=-1224.0 [[ anno::in_group("Cirrus") ]],
+    uniform float CirrusThickness=-22.1 [[ anno::in_group("Cirrus") ]],
+
+    uniform int CirrusLevels = 3 [[ anno::soft_range(1, 10), anno::in_group("Cirrus") ]],
+    uniform float CirrusLevelScale=1.923 [[ anno::in_group("Cirrus") ]],
+    uniform float CirrusLevelGain=0.866 [[ anno::in_group("Cirrus") ]],
+    uniform float CirrusFade=2.09 [[ anno::in_group("Cirrus") ]],
+
+
+    // uniform float CirrusShadowFactor=161.4 [[ anno::in_group("Cirrus") ]],
+    // uniform bool CirrusShadowEnabled = false [[ anno::in_group("Cirrus") ]],
+
+
+    // uniform bool ContrailEnabled = false [[ anno::in_group("Contrail") ]],
+    // uniform float ContrailAltitude=-14.0 [[ anno::in_group("Contrail") ]],
+    // uniform float ContrailFactor=1.4 [[ anno::in_group("Contrail") ]],
+    // uniform float StarfieldScale=-16 [[ anno::in_group("Contrail") ]],
+    // uniform float StarfieldFactor=-20.0 [[ anno::in_group("Contrail") ]],
+    // uniform color StarfieldTint=color(1) [[ anno::in_group("Contrail") ]],
+    // uniform color ContrailTint=color(1) [[ anno::in_group("Contrail") ]],
+    // uniform float ContrailDensity=8.0 [[ anno::in_group("Contrail") ]],
+    // uniform float ContrailNoiseScale=0.7 [[ anno::in_group("Contrail") ]],
+    // uniform float ContrailNoiseAmount=0.8 [[ anno::in_group("Contrail") ]],
+    // uniform float ContrailLength=32.0 [[ anno::in_group("Contrail") ]],
+    // uniform float ContrailShape=60.0 [[ anno::in_group("Contrail") ]],
+    // uniform float ContrailFade=0.0 [[ anno::in_group("Contrail") ]],
+    // uniform float ContrailSpeed=-34.0 [[ anno::in_group("Contrail") ]],
+    // uniform float ContrailWindFactor=-1.0 [[ anno::in_group("Contrail") ]],
+    // uniform float ContrailWindAngle=0.0 [[ anno::in_group("Contrail") ]],
+    // uniform int ContrailLevels = 4 [[ anno::soft_range(1, 10), anno::in_group("Contrail") ]],
+
+    // uniform float LowerHemisphereFactor=0.5 [[ anno::soft_range(float(0.0f), float(1.0f)),anno::in_group("LowerHemisphere") ]],
+    // uniform float LowerHemisphereSlope=50 [[ anno::in_group("LowerHemisphere") ]],
+    // uniform float LowerHemisphereSlope2=50 [[ anno::in_group("LowerHemisphere") ]],
+    // uniform float LowerHemisphereDesaturate=0.5 [[ anno::soft_range(float(0.0f), float(1.0f)),anno::in_group("LowerHemisphere") ]],
+    // uniform color LowerHemisphereTint=color(0.2) [[ anno::in_group("LowerHemisphere") ]],
+
+
+    uniform color TwilightColor=color(0.001, 0.005, 0.1) [[ anno::in_group("Night") ]],
+    uniform color NightColor=color(0.05, 0.1, 0.18) [[ anno::in_group("Night") ]],
+
+    uniform float NightColorD=-5.4 [[ anno::in_group("Night") ]],
+    uniform float NightColorH=-23.6 [[ anno::in_group("Night") ]],
+    uniform float NightColorG=0.0 [[ anno::in_group("Night") ]],
+    uniform float4 NightVector=float4(-1, 0.173, 1, 3) [[ anno::in_group("Night") ]],
+    // uniform float4 NightTiltVector=float4(0, 0, 0, 0) [[ anno::in_group("Night") ]],
+    uniform float2 NightAmbientPoint=float2(0.5, 0.188) [[ anno::in_group("Night") ]],
+    uniform bool PollutionEnabled=false [[ anno::in_group("Night") ]],
+    uniform color PollutionColor=color(1.0, 0.55, 0.15) [[ anno::in_group("Night") ]],
+    uniform float3 PollutionPosition=float3(-10, 0, -200) [[ anno::in_group("Night") ]],
+    uniform float4 PollutionShaper=float4(2, 19.5, -30, 0) [[ anno::in_group("Night") ]],
+
+    uniform bool StarsEnabled = true [[ anno::in_group("Night") ]],
+    uniform color StarsTint=color(1) [[ anno::in_group("Night") ]],
+    uniform float StarsIntensityExp=-28.8 [[ anno::in_group("Night") ]],
+    uniform float StarsScaleExp=21.6 [[ anno::in_group("Night") ]],
+    uniform int StarsLevels = 2 [[ anno::soft_range(1, 10), anno::in_group("Night") ]],
+    uniform float StarsLevelScale=1.243 [[ anno::in_group("Night") ]],
+    uniform float StarsLevelGain=1 [[ anno::in_group("Night") ]],
+    uniform float StarsNoiseScale=-1 [[ anno::in_group("Night") ]],
+    uniform float StarsNoiseToIntensity=-10.6 [[ anno::in_group("Night") ]],
+    // uniform float StarsTempMin=1000 [[ anno::in_group("Night") ]],
+    // uniform float StarsTempMax=80000 [[ anno::in_group("Night") ]],
+    // uniform float StarsGlowFactor=0.6 [[ anno::in_group("Night") ]],
+    // uniform float StarsClampSize=0.3 [[ anno::in_group("Night") ]],
+    // uniform bool AuroraEnabled = false [[ anno::in_group("Night") ]],
+    // uniform float AuroraScale=0 [[ anno::in_group("Night") ]],
+    // uniform color AuroraColor=color(1) [[ anno::in_group("Night") ]],
+    // uniform texture_2d StarsTexture = texture_2d() [[ anno::in_group("Night") ]],
+    // uniform float StarsTextureIntensity = 0 [[ anno::in_group("Night") ]],
+
+
+
+    uniform bool MoonEnabled = true [[ anno::in_group("Moon") ]],
+    uniform float LHA=-29.0  [[ anno::in_group("Moon") ]],
+    uniform float MoonDeclination=5.14  [[ anno::in_group("Moon") ]],
+
+    uniform float MoonSize=5 [[ anno::soft_range(float(0.0001f), float(180.0f)), anno::in_group("Moon") ]],
+    uniform color MoonColor = color(0.75, 0.93, 1) [[ anno::in_group("Moon") ]],
+    // uniform float MoonIntensity=10.0 [[ anno::soft_range(float(0.0f), float(10.0f)), anno::in_group("Moon") ]],
+    uniform float MoonDiskIntensity=1.0 [[ anno::soft_range(float(0.0f), float(10.0f)), anno::in_group("Moon") ]],
+    // uniform float MoonGlowFactor=-25.0 [[ anno::in_group("Moon") ]],
+    uniform float MoonLightFactor=0.0 [[ anno::in_group("Moon") ]],
+    // uniform texture_2d moon_texture = texture_2d("./textures/2k_moon.jpg",::tex::gamma_linear) [[ anno::in_group("Moon") ]],
+    
+
+    uniform bool LightningEnabled=false [[ anno::in_group("Thunder") ]],
+    uniform color LightningColor=color(0.82, 0.78, 0.88) [[ anno::in_group("Thunder") ]],
+    uniform float LightningScale=-59.4 [[ anno::in_group("Thunder") ]],
+    uniform float LightningFactor=-49.5 [[ anno::in_group("Thunder") ]],
+    uniform float LightningSpeed=-44.6 [[ anno::in_group("Thunder") ]],
+    uniform float4 LightningShaper=float4(-15.2, 1, 0.6, 0) [[ anno::in_group("Thunder") ]],
+    uniform float4 LightningShaper2=float4(-421.6, -23.8, 0, 0) [[ anno::in_group("Thunder") ]],
+
+
+    uniform float3 CameraPosition=float3(0,0,0)  [[ anno::in_group("Coords") ]],
+    uniform bool SunPositionFromTOD = true [[ anno::in_group("Coords") ]],
+    //TimeOfDaySpeed=0.289
+    uniform float TimeOfDaySpeed=0.0  [[ anno::in_group("Coords") ]],
+
+    uniform bool DebugEnabled=false [[ anno::in_group("Coords") ]],
+    uniform color DebugColor=color(1)  [[ anno::in_group("Coords") ]],
+    
+    uniform float Dummy=0  [[ anno::in_group("Coords") ]],
+    uniform float NorthOrientation=0  [[ anno::soft_range(float(0.0f), float(360.0f)), anno::in_group("Coords") ]],
+    uniform bool RotateNorth = false [[ anno::in_group("Coords") ]],
+    uniform float Latitude=36.9  [[ anno::soft_range(float(-90.0f), float(90.0f)), anno::in_group("Coords") ]],
+    uniform float Longitude=0  [[ anno::soft_range(float(-180.0f), float(180.0f)), anno::in_group("Coords") ]],
+    uniform float TimeOfDay=10.0  [[ anno::soft_range(float(0.0f), float(24.0f)), anno::in_group("Coords") ]],
+    uniform bool LocalTimeOfDay = true [[ anno::in_group("Coords") ]],
+    uniform float DayOfYear=0  [[ anno::soft_range(float(0.0f), float(365.0f)), anno::in_group("Coords") ]],
+    uniform float Declination=1  [[ anno::soft_range(float(-23.45f), float(23.45f)), anno::in_group("Coords") ]],
+    uniform bool DeclinationFromDayOfYear = false [[ anno::in_group("Coords") ]],
+    uniform float SHA=0  [[ anno::soft_range(float(-180.0f), float(180.0f)), anno::in_group("Coords") ]],
+    uniform float Azimuth=0  [[ anno::soft_range(float(-180.0f), float(180.0f)), anno::in_group("Coords") ]],
+    uniform float Elevation=0  [[ anno::soft_range(float(-180.0f), float(180.0f)), anno::in_group("Coords") ]],
+    uniform color SunColor=color(1,0.6,0.2) [[ anno::in_group("Coords") ]]
+
+) = let {
+
+
+    // bool IsMask=state::texture_coordinate(1).y>1;
+    // uniform float AzimuthOffset=SunPositionFromTOD?Azimuth:0;
+    uniform float AzimuthOffset=0.0;
+    // float tod_=TimeOfDay+(state::animation_time())*TimeOfDaySpeed;
+    float tod_=TimeOfDay
+        +(state::animation_time())*TimeOfDaySpeed
+        +(LocalTimeOfDay?0.0:24.0*Longitude/360.0);
+    float4 temp=suncalc(tod_,Latitude,Longitude,Declination,DayOfYear,DeclinationFromDayOfYear);
+    float dec_=SunPositionFromTOD?temp.w:Declination;
+    float sha_=SunPositionFromTOD?temp.x:SHA;
+    float az_=SunPositionFromTOD?temp.y+AzimuthOffset:Azimuth;
+    float el_=SunPositionFromTOD?temp.z:Elevation;
+    
+    
+    base::texture_coordinate_info uvw = base::coordinate_source(base::texture_coordinate_object,0);
+    // base::texture_coordinate_info uvw_world = base::coordinate_source(base::texture_coordinate_world,0);
+    float3 p0 = math::normalize(float3(uvw.position.x,uvw.position.z,-uvw.position.y));
+    // float3 p1 = math::normalize(float3(uvw_world.position.x,uvw_world.position.z,-uvw_world.position.y));
+
+    // float3 p = LatLongUnwrap?LatLong(float3(uvw.position.x,uvw.position.y,uvw.position.z))
+    //     :math::normalize(float3(uvw.position.x,uvw.position.z,-uvw.position.y));
+
+    // float3 p1=rY(p0,NorthOrientation/360.);
+    float3 p1=RotateNorth?rY(p0,NorthOrientation/360.):p0;
+    float3 p=float3(p1.x,p1.y==0.0?0.000001:p1.y,p1.z);
+    // float3 p=rY(IsMask?p1:p0,NorthOrientation/360.);
+
+    float3 sun_dir=SunDirection(el_,az_);
+    float3 p_sun=GetSunPosition(el_,az_);
+
+
+
+
+    float3 moon_dir=MoonDirection(Latitude,Longitude,dec_,sha_,DayOfYear,LHA,AzimuthOffset,MoonDeclination);
+    
+    // float3 amb_dir=AmbientDirection(ambient_point.y*0+math::asin(math::lerp(ambient_v.x,ambient_v.y,1-math::pow(1-p.y,ambient_point.y)))*180/math::PI,az_+ambient_point.x);
+
+    // float3 amb_dir1=math::normalize(p*float3(1,ambient_v.x,1)+float3(0,ambient_point.y,0));
+    // float3 amb_dir2=math::normalize(p*float3(1,ambient_v.y,1)+float3(0,ambient_point.y,0));
+    uniform float StarsGlowFactor=0.6;
+    uniform float StarsClampSize=0.3;
+    color c_stars=StarsEnabled?saturation_tweak(DrawStars(p,
+        el_,az_,Latitude,sha_,dec_,
+        AzimuthOffset,
+    // StarsEnabled,
+    StarsTint,
+    StarsIntensityExp,
+    StarsScaleExp,
+    StarsLevels,
+    StarsLevelScale,
+    StarsLevelGain,
+    StarsNoiseScale,
+    StarsNoiseToIntensity,
+    1000,
+    80000,
+    StarsGlowFactor,
+    StarsClampSize
+    // StarsTexture,
+    // StarsTextureIntensity
+    ),PostSaturation,true):color(0);
+    color c_moon=MoonEnabled?DrawMoon(p,c_stars,MoonColor,
+        p_sun,MoonSize,MoonDiskIntensity,
+        Latitude,Longitude,dec_,sha_,DayOfYear,LHA,AzimuthOffset,MoonDeclination):c_stars;
+
+    // color c_night=TwilightColor*math::smoothstep(-0.3,0,math::sin(el_/360*math::PI*2))*0.5*math::exp2(-math::abs(p.y)*2);
+    uniform float multiplier = 0.025;
+    uniform color rgb_unit_conversion = color(0.000666667);
+    float ElevationW=math::asin(math::sin((el_/180)*math::PI))*180/math::PI;
+
+    // uniform color c_SkyGamma=math::exp2(0.1*(color(SkyGamma.x,SkyGamma.y,SkyGamma.z)+color(SkyGamma.w)));
+    color c_clear=SkyTint*SkyIntensity*sun_and_sky_mod(
+            Vector:p,
+            multiplier:multiplier,
+            rgb_unit_conversion:rgb_unit_conversion,
+            haze:haze,
+            redblueshift:0.0,
+            saturation:SkySaturation,
+            horizon_height:0.0001,
+            horizon_blur:0.0,
+            ground_color:color(0.5),
+            night_color:color(0),
+            sun_direction:sun_dir,
+            sun_disk_intensity:sun_disk_intensity*(p.y>0),
+            sun_disk_scale:sun_disk_scale,
+            sun_glow_intensity:sun_glow_intensity,
+            physically_scaled_sun:true,
+            HorizonGlow:HorizonGlow
+            );
+    color c_ambient_constant=SkyTint*SkyIntensity*sun_and_sky_mod(
+            Vector:AmbientDirection(math::asin(ambient_point.y)*180/math::PI,az_+90),
+            multiplier:multiplier,
+            rgb_unit_conversion:rgb_unit_conversion,
+            haze:haze,
+            redblueshift:0.0,
+            saturation:SkySaturation,
+            horizon_height:0.0001,
+            horizon_blur:0.0,
+            ground_color:color(0.5),
+            night_color:color(0),
+            sun_direction:sun_dir,
+            sun_disk_intensity:0,
+            sun_disk_scale:sun_disk_scale,
+            sun_glow_intensity:sun_glow_intensity,
+            physically_scaled_sun:true,
+            HorizonGlow:HorizonGlow
+            )*CloudAmbientTint;
+    // color c_ambient_clear=SkyTint*SkyIntensity*sun_and_sky_mod(
+    //         Vector:p,
+    //         multiplier:multiplier,
+    //         rgb_unit_conversion:rgb_unit_conversion,
+    //         haze:haze,
+    //         redblueshift:0.0,
+    //         saturation:SkySaturation,
+    //         horizon_height:0.0001,
+    //         horizon_blur:0.0,
+    //         ground_color:color(0.5),
+    //         night_color:color(0),
+    //         sun_direction:sun_dir,
+    //         sun_disk_intensity:0,
+    //         sun_disk_scale:sun_disk_scale,
+    //         sun_glow_intensity:sun_glow_intensity,
+    //         physically_scaled_sun:true,
+    //         HorizonGlow:HorizonGlow
+    //         );
+
+
+    // color nightcol=NightFog(p,false,ElevationW,az_,TwilightColor,NightColor,NightColorD,NightColorH,NightColorG,NightVector,NightTiltVector);
+    color pollcol=PollutionEnabled?PollutionFunction(p,true,PollutionColor,PollutionPosition,PollutionShaper):color(0);
+    // color nightcol=math::lerp(
+    //     NightFog(p,false,ElevationW,az_,TwilightColor,NightColor,NightColorD,NightColorH,NightColorG,NightVector,NightTiltVector),
+    //     NightFog(p,false,ElevationW,az_,TwilightColor,NightColor,NightColorD,NightColorH,NightColorG,NightVector,NightTiltVector+float4(NightTiltVector.w,0,0,0)),
+    //     0.5);    
+    // color nightamb=CloudAmbientTint*math::lerp(
+    //     NightFog(float3(p.x,NightAmbientPoint.x,p.z),true,ElevationW,az_,TwilightColor,NightColor,NightColorD,NightColorH,NightColorG,NightVector,NightTiltVector),
+    //     NightFog(float3(p.x,NightAmbientPoint.y,p.z),true,ElevationW,az_,TwilightColor,NightColor,NightColorD,NightColorH,NightColorG,NightVector,NightTiltVector),
+    //     0.5)+1.0*pollcol;
+    color nightcol=NightFog(p,moon_dir,MoonEnabled,MoonColor,false,ElevationW,az_,TwilightColor,NightColor,NightColorD,NightColorH,NightColorG,NightVector);
+ 
+    color nightamb=CloudAmbientTint*
+        NightFog(AmbientDirection(math::asin(NightAmbientPoint.y)*180/math::PI,az_+90),moon_dir,MoonEnabled,MoonColor,true,ElevationW,az_,TwilightColor,NightColor,NightColorD,NightColorH,NightColorG,NightVector)
+        +1.0*pollcol;
+
+
+    // uniform float ctime=UseCloudTime?CloudTime:TimeOfDay; 
+    // float ctime=UseCloudTime?(state::animation_time()):TimeOfDay; 
+    float ctime=UseCloudTime?CloudTime:tod_; 
+    float3 campos=CameraPosition+float3(speed_scroll_u,0,speed_scroll_v)*ctime;
+    float4 cv=p.y>0.0?trace_clouds(
+        p,sun_dir,campos,
+        moon_dir,
+        c_clear,c_moon,c_ambient_constant,nightcol,nightamb,
+        ElevationW,az_,
+        Latitude,sha_,dec_,
+        CumulusEnabled,
+        CloudScaleExp,
+        CloudHeight,
+        CloudAltitude,
+
+        CumulusLevels,
+        CumulusLevelGain,
+        CumulusLevelScale,
+        CumulusDistortShaper,
+        CumulusBaseShaper,
+        CumulusMorphFactor,
+        CumulusNoiseShaper,
+        CloudCoverage,
+        CloudCoverageTilt,
+        CloudCoverageFade,
+        CloudCoverageCurveA,
+        CloudCoverageCurveB,
+        
+        CloudDensityExp,
+        CloudDensityClamp,
+        CloudDensityTilt,
+        CloudDensityFade,
+        CloudDensityCurveA,
+        CloudDensityCurveB,
+
+        CloudDistanceToDensity,
+        CloudDistanceToCoverage,
+        // StratusCoverage,
+        // StratusDensity,
+        // StratusScaleX,
+        // StratusScaleZ,
+        // StratusPhaseY,
+        // StratusNoiseY,
+        // StratusThickness,
+        // StratusDensityClamp,
+        CloudPhaseTilt,
+        // CloudLODTilt,
+
+
+        CloudLightFactor,
+        CloudLightCurve,
+        CloudLightCurve2,
+        CloudShadowCurve,
+        CloudEdgeCurve,
+        // CloudAbsorbFactor,
+        CloudScattering,
+        CloudExtinction,
+        CloudAmbientTint,
+        // CloudAmbientFactor,
+        // CloudAmbientShape,
+        CloudLightGlow,
+
+
+
+        CloudAmbientFog,
+        CloudAmbientFogTint,
+        CloudAmbientFogShaper,
+        CloudFogEnabled,
+        CloudFogDensityExp,
+        CloudFogShape,
+
+        // CloudDetailScaleExp,
+        // CloudDetailLevels,
+        // CloudDetailLevelScale,
+        // CloudDetailLevelGain,
+        // CloudDetailToCoverage,
+        // CloudDetailToDensity,
+
+
+        CloudShadowFactor,
+        CloudShadowDistance,
+        CloudShadowBias,
+        CloudShadowExp,
+        CloudShadowDither,
+        // CloudShadowDetailed,
+
+        CirrusSpeed,
+        CirrusEnabled,
+        CirrusAltitude,
+        CirrusScaleExp,
+        CirrusShaper,
+        CirrusShaper2,
+        CirrusBlurShaper,
+        CirrusLightShaper,
+        CirrusFactor,
+        CirrusDensity,
+        CirrusCoverage,
+        CirrusThickness,
+        CirrusLevels,
+        CirrusLevelScale,
+        CirrusLevelGain,
+        CirrusFade,
+        // CirrusShadowFactor,
+        // CirrusShadowEnabled,
+
+        // ContrailEnabled,
+        // ContrailAltitude,
+        // ContrailFactor,
+        // StarfieldScale,
+        // StarfieldFactor,
+        // StarfieldTint,
+        // ContrailTint,
+        // ContrailDensity,
+        // ContrailNoiseScale,
+        // ContrailNoiseAmount,
+        // ContrailLength,
+        // ContrailShape,
+        // ContrailFade,
+        // ContrailSpeed,
+        // ContrailWindFactor,
+        // ContrailWindAngle,
+        // ContrailLevels,
+
+        // TwilightColor,NightColor,NightColorD,NightColorH,NightColorG,
+        PollutionEnabled,
+        PollutionColor,
+        PollutionPosition,
+        PollutionShaper,
+
+        // AuroraEnabled,AuroraScale,AuroraColor,
+        MoonEnabled,MoonSize,MoonColor,MoonLightFactor,
+
+        LightningEnabled,
+        LightningColor,
+        LightningScale,
+        LightningFactor,
+        LightningSpeed,
+        LightningShaper,
+        LightningShaper2,
+
+        CloudRaySteps,tr_min,CloudShadowSteps,CloudDither,RayStartOffset,RaymarchShaper,
+        // CloudLODTilt,CloudPhaseTilt,
+        SunSaturation,SunTint,
+        ctime*math::exp2(speed_exp*0.1),speed_phase,speed_motion,0,0
+    ):float4(1,1,1,0);
+    // uniform float LowerHemisphereFactor=0.5;
+    // uniform float LowerHemisphereSlope=50;
+    // uniform float LowerHemisphereSlope2=50;
+    // uniform float LowerHemisphereDesaturate=0.5;
+    // uniform color LowerHemisphereTint=color(0.2);
+    color c_ground=DrawGround(p,sun_dir,moon_dir,MoonEnabled,MoonColor,c_ambient_constant*0.5+nightamb*0.35,c_ambient_constant,nightamb,
+        ElevationW,
+        // LowerHemisphereFactor,
+        // LowerHemisphereSlope,
+        // LowerHemisphereSlope2,
+        // LowerHemisphereDesaturate,
+        // LowerHemisphereTint,
+        CloudAmbientFog,
+        CloudAmbientFogTint,
+        CloudAmbientFogShaper
+        );
+
+    color c=emissive_color*(p.y>0.0?
+        // color(cv.x,cv.y,cv.z)
+        // color(cv.w*0.05*p.y)
+        color(cv.x,cv.y,cv.z)
+        // math::lerp(color(cv.x,cv.y,cv.z),c_ambient_z*2,1-math::exp2(-math::pow(cv.w*math::pow(p.y,.85),2)*math::exp2(CloudAmbientFog*0.1-6)))
+        
+        :(c_ground));
+    // color col=c;//math::exp2(math::log2(c/math::luminance(c))*math::exp2(SaturationExp*0.1)+math::log2(color(math::luminance(c))));
+    color col_proc=math::pow(math::max(color(0),c),math::exp2(0.1*(color(PostGamma.x,PostGamma.y,PostGamma.z)+color(PostGamma.w))))*PostTint;
+    color col=col_proc;
+    // float2 latlong_uv=XYZtoLatLong(p0);
+    // color col=BlendTextureA>0?math::lerp(col_proc,tex::lookup_color(blend_texture_A,latlong_uv)*BlendTextureATint,BlendTextureA):col_proc;
+    // color col_A=BlendTextureA>0?math::lerp(col_proc,tex::lookup_color(blend_texture_A,latlong_uv),BlendTextureA):col_proc;
+    // color col=BlendTextureB>0?math::lerp(col_A,tex::lookup_color(blend_texture_B,latlong_uv),BlendTextureB):col_A;
+    
+    // color col_masked=ApplyMask(col,p,
+    // MaskAzimuth,
+    // MaskElevation,
+    // MaskFrom,
+    // MaskTo,
+    // MaskTint,
+    // MaskBlend
+    //     );
+    color col_debug=DrawDebug(p,campos,el_,az_,Latitude,sha_,dec_,
+        AzimuthOffset,
+        CloudAltitude,
+        CloudHeight,
+        CloudScaleExp,
+        CirrusAltitude,
+        CirrusScaleExp
+        );
+    // color col_final=math::min(color(EmissiveIntensityClamp),
+    //     math::max(color(0),
+    //     col
+    //     // (MaskEnabled?col_masked:col)
+    //     ))
+    // +DebugColor*(DebugEnabled?col_debug:color(0))
+    // ;
+    color col_final=
+        math::max(color(0),
+        col
+        // (MaskEnabled?col_masked:col)
+        )
+    +DebugColor*(DebugEnabled?col_debug:color(0))
+    ;
+// float Latitude=0,float Longitude=0,float SHA=0,float Declination=0){
+    
+
+    color col_desat=arch_colortweak(col_final, PostSaturation, 0);
+    // color col_desat=sat_tweak(col_final, PostSaturation);
+    color col_output=col_desat*Intensity*math::exp2(Exposure+
+            // math::lerp(ExposureA,ExposureB,linstep(ExposureElevationA,ExposureElevationB,el_))
+            math::lerp(ExposureA,ExposureB,
+                1-math::pow(
+                math::saturate(1-sigm(1.6*(lmap(ExposureElevationA,ExposureElevationB,el_)-0.5)))
+                ,2)
+                )
+            
+            );
+
+} in material(
+    surface: material_surface(
+        emission:  material_emission (
+            df::diffuse_edf(),
+            // (p.y>0?col:c_ground)
+            // intensity: col_desat*Intensity*math::exp2(Exposure)
+            intensity: math::min(math::length(state::normal())<0.5?EmissiveIntensityClamp:EmissiveSurfaceClamp,col_output)
+            
+        )
+    )
+);

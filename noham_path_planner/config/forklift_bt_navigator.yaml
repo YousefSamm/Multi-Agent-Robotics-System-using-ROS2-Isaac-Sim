@@ -1,0 +1,18 @@
+bt_navigator:
+  ros__parameters:
+    use_sim_time: true
+    global_frame: map
+    robot_base_frame: "base_link"
+    odom_topic: /odom
+    transform_tolerance: 0.1
+    default_nav_to_pose_bt_xml: "/home/yousef/ros2_workspaces/noham_ws/src/noham_path_planner/config/forklift_behavior.xml"
+    default_nav_through_poses_bt_xml: "/home/yousef/ros2_workspaces/noham_ws/src/noham_path_planner/config/forklift_behavior.xml"
+    always_reload_bt_xml: false
+    goal_blackboard_id: goal
+    goals_blackboard_id: goals
+    path_blackboard_id: path
+    navigators: ['navigate_to_pose', 'navigate_through_poses']
+    navigate_to_pose:
+      plugin: "nav2_bt_navigator/NavigateToPoseNavigator"
+    navigate_through_poses:
+      plugin: "nav2_bt_navigator/NavigateThroughPosesNavigator"

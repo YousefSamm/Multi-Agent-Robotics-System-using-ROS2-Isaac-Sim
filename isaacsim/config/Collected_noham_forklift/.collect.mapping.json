@@ -1,0 +1,449 @@
+{
+    "version": "1.0",
+    "file_records": [
+        {
+            "source_url": "/home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Environments/Grid/Materials/Textures/WireframeBlur_basecolor.png",
+            "source_hash": "250332aadacbefe8df02241174ad3aaa056ffef9",
+            "target_url": "./home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Environments/Grid/Materials/Textures/WireframeBlur_basecolor.png",
+            "target_hash": "c35fe32e7e2091b8e03ae595d8006f5c9cee21d3"
+        },
+        {
+            "source_url": "/home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Environments/Grid/Materials/Textures/WireframeBlur_blue.png",
+            "source_hash": "f20ccfacc944f288557a710c2f7e036c1302708d",
+            "target_url": "./home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Environments/Grid/Materials/Textures/WireframeBlur_blue.png",
+            "target_hash": "6987dc02a30f259c3cdb70b9d6cc98df6702f1ad"
+        },
+        {
+            "source_url": "/home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Environments/Grid/Materials/Textures/Wireframe_blue.png",
+            "source_hash": "eda49e075361f1bdeff186a83286ab6bb15ac221",
+            "target_url": "./home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Environments/Grid/Materials/Textures/Wireframe_blue.png",
+            "target_hash": "96e35bee461e15fcd27619f99e1fdac31191cf47"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Decals_Albedo.1001.png",
+            "source_hash": "f4016ae43355cde82c22bd20bf3919dff2a79d7f",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Decals_Albedo.1001.png",
+            "target_hash": "6075d3b01d01953945f3851d4fe796e589b6a29c"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Decals_Normal.1001.png",
+            "source_hash": "638af5b77c96a8df04a7830bbdb3167750811141",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Decals_Normal.1001.png",
+            "target_hash": "bed83a9718ca059cfea35cf11f142b853b805118"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Decals_ORM.1001.png",
+            "source_hash": "b0ff760ebe9b31e70edcd934d69c4918f0bb5a1f",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Decals_ORM.1001.png",
+            "target_hash": "a4ee485a0b0395146980e8e73c201bd21d560232"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Decals_Opacity.1001.png",
+            "source_hash": "46a1123e0b55cc68bcef458051aace2985463c75",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Decals_Opacity.1001.png",
+            "target_hash": "e475e12af257af945269a064b4c772b930ccd34b"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Albedo.1001.png",
+            "source_hash": "283165283ed6d4cd39df4e03772b7daba3749e73",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Albedo.1001.png",
+            "target_hash": "300837312843b99e15aef1d1cbaeb216941a2cac"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Emissive.1001.png",
+            "source_hash": "4d40de9bd976c0f343eb00a3be0cc366b36a551c",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Emissive.1001.png",
+            "target_hash": "c46ec4436d370c5144553f5bb9c74a2ab56b92ad"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Normal.1001.png",
+            "source_hash": "498f03106c7ca43f66f19f61a37f54143f0bdc35",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Normal.1001.png",
+            "target_hash": "1571445016aae2b9c3758bccae5fb3cc0329c51d"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_ORM.1001.png",
+            "source_hash": "259c72b2b07007a64975ac162a4c5c426e76b017",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_ORM.1001.png",
+            "target_hash": "2ae24fa8399b0820634cda7704db9a9aad9f412e"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Opacity.1001.png",
+            "source_hash": "f3cdd5442e54a073aeec3fb765b6b030f98779ab",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Opacity.1001.png",
+            "target_hash": "8db807deaf2e9bde1483c825f60a7ffb4681bc07"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Rough.1001.png",
+            "source_hash": "f387430cb3de7d9cf340e0a7521ade85406ec9a8",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Rough.1001.png",
+            "target_hash": "92c3b5310b925aca3dcff7ac2c739a4f25a2c2ed"
+        },
+        {
+            "source_url": "/home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Materials/vMaterials_2/Carpet/Carpet_Woven.mdl",
+            "source_hash": "bebc8d7b4c0cf541967b986b8d07553cc15d218f",
+            "target_url": "./home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Materials/vMaterials_2/Carpet/Carpet_Woven.mdl",
+            "target_hash": "9e8531cfb410831507616be1969651fa70c61b6c"
+        },
+        {
+            "source_url": "/home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Materials/vMaterials_2/Ground/Large_Granite_Paving.mdl",
+            "source_hash": "f48c2cd6bf673838dbc7eef50fc9632b04eb97ba",
+            "target_url": "./home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Materials/vMaterials_2/Ground/Large_Granite_Paving.mdl",
+            "target_hash": "8c21d7fb97433bb3fd8cdf2a726a4c84013f8911"
+        },
+        {
+            "source_url": "/home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Materials/vMaterials_2/Masonry/Facade_Brick_Red_Clinker.mdl",
+            "source_hash": "03bcbcf63e123c4842e2668ce4cf8300e528c933",
+            "target_url": "./home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Materials/vMaterials_2/Masonry/Facade_Brick_Red_Clinker.mdl",
+            "target_hash": "6411d9df0a7abeae6ae35f580cd21b87ef17d1d6"
+        },
+        {
+            "source_url": "/home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Assets/Skies/Sky_Elements/materials/procedural/CumulusHeavy.mdl",
+            "source_hash": "72d590600e06dd70be3b2274bc1d115e79db0e6e",
+            "target_url": "./home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Assets/Skies/Sky_Elements/materials/procedural/CumulusHeavy.mdl",
+            "target_hash": "bb622c40c7d2bd612b30b91fce6da76dd4210f2c"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Albedo.1002.png",
+            "source_hash": "0dd9c43be08cea8ac2cd709fe8b1c52cddb16c93",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Albedo.1002.png",
+            "target_hash": "05c48817f64983a20141c3c31662d1abeda0643a"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Emissive.1002.png",
+            "source_hash": "0bc80a76484e5e7e24ddf92dfa00b2fcd664f352",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Emissive.1002.png",
+            "target_hash": "759337d53b804f6cfac72880b55593ffa6f8110e"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Normal.1002.png",
+            "source_hash": "926bd11d925160a5eb8258650fe455ae2090baa4",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Normal.1002.png",
+            "target_hash": "8fa4253be10bb8a291099da32fc653e5635cb74c"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_ORM.1002.png",
+            "source_hash": "e1925ab5b360713502a522deb9e8481d992909c2",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_ORM.1002.png",
+            "target_hash": "af09e3af5ad098282f637fbd09d3387440e8ef0e"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Opacity.1002.png",
+            "source_hash": "f1102affdc7fd86c297bdc25d08418cf8c3fafe6",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Opacity.1002.png",
+            "target_hash": "8576cfb141a176e0df19c52b1e4baf4ba26c8dda"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Rough.1002.png",
+            "source_hash": "864e98e27633918d21344e3db672440a5885ed56",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Rough.1002.png",
+            "target_hash": "53d4d363bdb130229d802714217f45cf568dd459"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Albedo.1003.png",
+            "source_hash": "8140690374334c611b00511f8cab626f9082cbb3",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Albedo.1003.png",
+            "target_hash": "6014d7bfd7246721def03357245b808512b1ad43"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Emissive.1003.png",
+            "source_hash": "70295852972b4e50793aa98ddbbc5bccd364bd17",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Emissive.1003.png",
+            "target_hash": "50ddf6a58a33b70b494a19c5bffa7bea50adde37"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Normal.1003.png",
+            "source_hash": "d59bcad971e81ebd78a05946b5482e4b7f0f9489",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Normal.1003.png",
+            "target_hash": "b8f6f3359fb02da1870476f8ba16fed992d250ab"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_ORM.1003.png",
+            "source_hash": "8554c46edd1f6fde14e28e6a23bd6590a1a50110",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_ORM.1003.png",
+            "target_hash": "4a72d68fc9f8b7a41ba2c919e691652ce9b4f1dc"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Opacity.1003.png",
+            "source_hash": "bd3a9e852a4d98dbca98867b631944f562a0eaa4",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Opacity.1003.png",
+            "target_hash": "5a3f35c1b232b1c6c4262a5cd1b6ae177cd4d66d"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Rough.1003.png",
+            "source_hash": "87e884bdd6277b86c2daad21a4cc03738d3fef9a",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Rough.1003.png",
+            "target_hash": "f074ee2f91eab74f023528b0784a2349a056481d"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Albedo.1004.png",
+            "source_hash": "8a61fe9a433b8ce2fa7127725e8fe219981f067e",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Albedo.1004.png",
+            "target_hash": "68c5f92ee34192f372d7888ea4aa30ce0d2436ea"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Emissive.1004.png",
+            "source_hash": "51b7d2e0fc7282fbf214fcc5d40015fafe0be430",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Emissive.1004.png",
+            "target_hash": "e23609c810b91cc1076193b73ffc5ef93644a5c0"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Normal.1004.png",
+            "source_hash": "32d54088097961db5ce69806594a0d1243d0677e",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Normal.1004.png",
+            "target_hash": "885dc1c4c688ce758d3faf9829d7e1b82701c01a"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_ORM.1004.png",
+            "source_hash": "e8936821b96592b5c86c9a0a2dd7f422f1293b8f",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_ORM.1004.png",
+            "target_hash": "4aeff12d2a0fa252c954733828210a7cb24df4f6"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Opacity.1004.png",
+            "source_hash": "4c50a7a81d3c213806e1b0ce291ff4d9669a53b3",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Opacity.1004.png",
+            "target_hash": "7fa23ca91f374485d6178a6768cea32a7e2e15ea"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Rough.1004.png",
+            "source_hash": "21d2601e2b2d7051a229f10f91dfdf287e712db9",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Rough.1004.png",
+            "target_hash": "b566500af3e72bd37e9aba2ad6d1ea44e4dbc438"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Albedo.1005.png",
+            "source_hash": "ac5f5fcb44233a917eec6cd6587dddcbeb5d9455",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Albedo.1005.png",
+            "target_hash": "5e5a23c73f55231f32d4754a6d6a3ed871c19ed4"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Emissive.1005.png",
+            "source_hash": "0c6fb3b3cd2b8f6713fd4e4130e7ced3a98f52f9",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Emissive.1005.png",
+            "target_hash": "5b662b2e9ecaa3afe6d4eb309fb032b881852491"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Normal.1005.png",
+            "source_hash": "50c8b08dee47be7159789da5d38ca17211b0af1d",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Normal.1005.png",
+            "target_hash": "6d8ca49fddc74de36dfe44bda742e509a483d69d"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_ORM.1005.png",
+            "source_hash": "2e1b570b57f0976919ed848a621cdae129468daa",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_ORM.1005.png",
+            "target_hash": "a100e1ed128ff8b561182a4cbe334e167a71e6e8"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Opacity.1005.png",
+            "source_hash": "ddb311b3e1abd7b83982511f4b104e98a7a3b6d4",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Opacity.1005.png",
+            "target_hash": "756fae0e72a9d0d141469511ecd4ac22dbf9232d"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Rough.1005.png",
+            "source_hash": "fb93211f373e4437482b139acc7ef3bfd78b8f3e",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Rough.1005.png",
+            "target_hash": "55545d8698b48f927a9c7d06fc7d76a389a34809"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Albedo.1006.png",
+            "source_hash": "7a0fe44dc30d0b2cde99723986fdfb73935864cc",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Albedo.1006.png",
+            "target_hash": "d58002fc74ddb3eb207b2f8bcad5e23c9417aaf6"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Emissive.1006.png",
+            "source_hash": "0c6fb3b3cd2b8f6713fd4e4130e7ced3a98f52f9",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Emissive.1006.png",
+            "target_hash": "8455f03f0fe744064f27e908bc56c4f8a56e5c79"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Normal.1006.png",
+            "source_hash": "3de83977f52fc6b5ce01193501d8c124e84c736f",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Normal.1006.png",
+            "target_hash": "24ab7268b9814e3dd7bcaf853674c88aec601aa7"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_ORM.1006.png",
+            "source_hash": "cad49ee4c2520a9bff824602b00a246cf2f8ad8c",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_ORM.1006.png",
+            "target_hash": "997907e8443c6f9d75feeb5e45b2e2a2fbc28cbc"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Opacity.1006.png",
+            "source_hash": "96672d61a7898a95e4398af30da4282f8736b0ae",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Opacity.1006.png",
+            "target_hash": "d65cef8936791c9fd1f59d65fef1ba831e0742f2"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Rough.1006.png",
+            "source_hash": "d894455a22527dc6cee56cfdcbdabab92c6babfa",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Rough.1006.png",
+            "target_hash": "dc8b6433120036c3e35ae382fdee23e3f1545666"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Albedo.1007.png",
+            "source_hash": "54f686134352461d8a413eca96b72a41ea8eac1d",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Albedo.1007.png",
+            "target_hash": "b51392bb2bd67bf679ff1b8742fb97e8052d699b"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Emissive.1007.png",
+            "source_hash": "0c6fb3b3cd2b8f6713fd4e4130e7ced3a98f52f9",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Emissive.1007.png",
+            "target_hash": "455c1111dddca94f431a9fa3d20c06b6bfebebe1"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Normal.1007.png",
+            "source_hash": "19a4d5f6f3e0ba54764437eebbde9266ee91097f",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Normal.1007.png",
+            "target_hash": "ebea6148788d56fd1aa452e84b15726e7968179a"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_ORM.1007.png",
+            "source_hash": "cd92e22704f4fab93e6df55e2d9aa0d6f16c2153",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_ORM.1007.png",
+            "target_hash": "729b035b3ab2db095555a16713ad65adba663c1e"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Opacity.1007.png",
+            "source_hash": "440ebbb5e4c6befc880822312fdbc00e3498e224",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Opacity.1007.png",
+            "target_hash": "e9a91fe3764914db8648692bb965ad0064e2f780"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Rough.1007.png",
+            "source_hash": "d152b6a7bc5ae0658b1d7d5dc3f44da717c4c522",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Rough.1007.png",
+            "target_hash": "851a56fb9a500024d0629d648275ac752df935b5"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Albedo.1008.png",
+            "source_hash": "4b4fe8bd5e05bead28332cf9de340575b9032d9d",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Albedo.1008.png",
+            "target_hash": "124c2ea5af24696b5816a3a17ec1a6ebce1663f4"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Emissive.1008.png",
+            "source_hash": "0c6fb3b3cd2b8f6713fd4e4130e7ced3a98f52f9",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Emissive.1008.png",
+            "target_hash": "12961d77d8407c92b213974fdb541d2cee1a5440"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Normal.1008.png",
+            "source_hash": "7810dddd1e256a9d8c6c2a53c133f8799ff2b06e",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Normal.1008.png",
+            "target_hash": "f12252b482bac01aa3735ebc1c0717c48fe70423"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_ORM.1008.png",
+            "source_hash": "6cc4be12523f3162871af69e51f20442903af1a4",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_ORM.1008.png",
+            "target_hash": "80244c161888806ac7034e4416e864eb489e316e"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Opacity.1008.png",
+            "source_hash": "704651a28cbb797bb87260b9b86acfdd1f0a8304",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Opacity.1008.png",
+            "target_hash": "62561ce90462ff12d817f4d3125ec00d9268ebcf"
+        },
+        {
+            "source_url": "https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Rough.1008.png",
+            "source_hash": "7472fca021f672830a153abb7730cff4aa8b1936",
+            "target_url": "./omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/Isaac/Robots/Forklift/Props/Source/Forklift_C/Textures/T_Forklift_C01_Rough.1008.png",
+            "target_hash": "220850309da0a0a0521ce5bd00ee3a6de193fdd2"
+        },
+        {
+            "source_url": "/home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Assets/Skies/Sky_Elements/materials/procedural/ProceduralSky.mdl",
+            "source_hash": "6de7b9bde9e6db2f72d056f9104ddbb4aeacaed1",
+            "target_url": "./home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Assets/Skies/Sky_Elements/materials/procedural/ProceduralSky.mdl",
+            "target_hash": "b0d791dcb16f824a8236ed13f2aaf91169524dfa"
+        },
+        {
+            "source_url": "/home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Materials/vMaterials_2/Carpet/textures/carpet_rough_woven_multi_R_rough_G_ao_B_vari.jpg",
+            "source_hash": "83ea8e552587a6c0ffd84066ce75de08d4e9c85c",
+            "target_url": "./home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Materials/vMaterials_2/Carpet/textures/carpet_rough_woven_multi_R_rough_G_ao_B_vari.jpg",
+            "target_hash": "841385cdd6d19f9f1d64057c673af692b671428a"
+        },
+        {
+            "source_url": "/home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Materials/vMaterials_2/Ground/textures/Large_Granite_Paving_rough.jpg",
+            "source_hash": "d5e9b17aecf6bea52f2b6eda825520cc0a07dd3d",
+            "target_url": "./home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Materials/vMaterials_2/Ground/textures/Large_Granite_Paving_rough.jpg",
+            "target_hash": "6997854199e672a0b24a970cd0b25686cf2696da"
+        },
+        {
+            "source_url": "/home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Materials/vMaterials_2/Carpet/textures/carpet_rough_woven_diff.jpg",
+            "source_hash": "3f00a0368a53fb4820c6ce75b29bef4ef87ef12c",
+            "target_url": "./home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Materials/vMaterials_2/Carpet/textures/carpet_rough_woven_diff.jpg",
+            "target_hash": "45b7f374bfb59a88bf155323c38793e73f5fed3d"
+        },
+        {
+            "source_url": "/home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Materials/vMaterials_2/Ground/textures/Large_Granite_Paving_mask.png",
+            "source_hash": "70c09786e6a2c7a6085c818316c7f937bf01d61d",
+            "target_url": "./home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Materials/vMaterials_2/Ground/textures/Large_Granite_Paving_mask.png",
+            "target_hash": "66dd259d91560b5d7becb91af9c90f36b1ab8e27"
+        },
+        {
+            "source_url": "/home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Materials/vMaterials_2/Masonry/textures/clinker_multi_R_rough_G_ao_B_height.jpg",
+            "source_hash": "5da3061d485bd53fc63e3fb56b9c345519323901",
+            "target_url": "./home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Materials/vMaterials_2/Masonry/textures/clinker_multi_R_rough_G_ao_B_height.jpg",
+            "target_hash": "fb574609c4c89af08b36d0ead2227f4e1896f941"
+        },
+        {
+            "source_url": "/home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Materials/vMaterials_2/Carpet/textures/carpet_rough_woven_norm.jpg",
+            "source_hash": "540967fb9574b9d8e308dcf143a85489fde17f65",
+            "target_url": "./home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Materials/vMaterials_2/Carpet/textures/carpet_rough_woven_norm.jpg",
+            "target_hash": "2c0f10a4cee4b84b453c3e4dade53fce6047acdd"
+        },
+        {
+            "source_url": "/home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Materials/vMaterials_2/Ground/textures/Large_Granite_Paving_diff.jpg",
+            "source_hash": "5cfd3b21f5cb1d6d6b63f1593afafb770f00eb9f",
+            "target_url": "./home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Materials/vMaterials_2/Ground/textures/Large_Granite_Paving_diff.jpg",
+            "target_hash": "3bc32540fc7da1389ab5a2087a85ba53394e4520"
+        },
+        {
+            "source_url": "/home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Materials/vMaterials_2/Masonry/textures/painted_wall_rough.jpg",
+            "source_hash": "a54eacf77109491048e29b0f2174195fd64da368",
+            "target_url": "./home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Materials/vMaterials_2/Masonry/textures/painted_wall_rough.jpg",
+            "target_hash": "446e5c9f81ee1c69412c5dd4550764310259df97"
+        },
+        {
+            "source_url": "/home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Materials/vMaterials_2/Ground/textures/Large_Granite_Paving_norm.jpg",
+            "source_hash": "90322e1d35c3506b4171d345f81e7b2f7f1aa9ad",
+            "target_url": "./home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Materials/vMaterials_2/Ground/textures/Large_Granite_Paving_norm.jpg",
+            "target_hash": "497c139ccf2b6b7dc546fb443ffdc156d166aa8b"
+        },
+        {
+            "source_url": "/home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Materials/vMaterials_2/Masonry/textures/clinker_rough.jpg",
+            "source_hash": "ac4602bcf5852cbdfb78d6a3be5d9b30bf6acbf4",
+            "target_url": "./home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Materials/vMaterials_2/Masonry/textures/clinker_rough.jpg",
+            "target_hash": "87f8255a8457c14c7133b50439fe000d204d8ff9"
+        },
+        {
+            "source_url": "/home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Materials/vMaterials_2/Masonry/textures/clinker_mask_multi_R_rnd_color_G_grout_B_leaks.jpg",
+            "source_hash": "57c0732fad3e7a7346d856d7e6e1825eba0ba908",
+            "target_url": "./home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Materials/vMaterials_2/Masonry/textures/clinker_mask_multi_R_rnd_color_G_grout_B_leaks.jpg",
+            "target_hash": "5380e73745f22c4b6945deb3ca61f825094ab418"
+        },
+        {
+            "source_url": "/home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Materials/vMaterials_2/Masonry/textures/clinker_diff.jpg",
+            "source_hash": "b52e532d3ebbe73a4ff0ddfc2758afbca050d239",
+            "target_url": "./home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Materials/vMaterials_2/Masonry/textures/clinker_diff.jpg",
+            "target_hash": "a485d4d281e34ed755aac2f98539afe9a76b7228"
+        },
+        {
+            "source_url": "/home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Materials/vMaterials_2/Masonry/textures/clinker_paint_stroke_bump.jpg",
+            "source_hash": "1ad8e9f095a95eed06cf461caa1cb81b1e078a1c",
+            "target_url": "./home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Materials/vMaterials_2/Masonry/textures/clinker_paint_stroke_bump.jpg",
+            "target_hash": "29775a2efb31792af3c83ab592732f77d525dd52"
+        },
+        {
+            "source_url": "/home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Materials/vMaterials_2/Masonry/textures/clinker_norm.jpg",
+            "source_hash": "414a33325b461b09e5be22c2e3ec3d34a7a9e237",
+            "target_url": "./home/yousef/ros2_workspaces/noham_ws/src/isaacsim/config/Collected_noham_sim_jaco_husky/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/4.5/NVIDIA/Materials/vMaterials_2/Masonry/textures/clinker_norm.jpg",
+            "target_hash": "2ab36d4b38c472eea16556196c1490259eefd3cb"
+        }
+    ]
+}

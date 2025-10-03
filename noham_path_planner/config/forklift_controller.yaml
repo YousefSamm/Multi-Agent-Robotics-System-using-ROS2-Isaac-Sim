@@ -1,0 +1,96 @@
+controller_server:
+  ros__parameters:
+    # Controller server parameters for forklift
+    controller_frequency: 10.0  # Reduced frequency for forklift safety
+    controller_server_timeout: 15.0  # Increased timeout for forklift operations
+    controller_server_timeout_scale: 1.0
+    min_x_velocity_threshold: 0.001
+    min_y_velocity_threshold: 0.5
+    min_theta_velocity_threshold: 0.5
+    
+    # Plugin configuration
+    progress_checker_plugins: ["progress_checker"]
+    goal_checker_plugins: ["goal_checker"]
+    current_goal_checker: "goal_checker"
+    controller_plugins: ["FollowPath"]
+    
+    # Progress checker for forklift safety
+    progress_checker:
+      plugin: "nav2_controller::SimpleProgressChecker"
+      required_movement_radius: 0.8  # Larger radius for forklift safety
+      movement_time_allowance: 15.0  # More time allowance for forklift
+    
+    # Goal checker with forklift-specific tolerances
+    goal_checker:
+      plugin: "nav2_controller::SimpleGoalChecker"
+      xy_goal_tolerance: 0.25  # Larger tolerance for forklift precision
+      yaw_goal_tolerance: 0.4  # Larger yaw tolerance for forklift
+      stateful: True
+    
+    # Regulated Pure Pursuit Controller - Better at preventing in-place rotation
+    # This outputs cmd_vel (Twist) messages that are converted by cmdvel_to_ackermann node
+    FollowPath:
+      plugin: "nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController"
+      
+      # Velocity limits matching your current configuration
+      desired_linear_vel: 0.8  # Matches your max_vel_x: 1.0 with some margin
+      max_linear_accel: 1.0   # Matches your acc_lim_x: 1.0
+      max_linear_decel: -3.0   # Matches your decel_lim_x: -3.0
+      
+
+      # Lookahead distance configuration
+      lookahead_dist: 0.3      # Reduced from 0.6 for very aggressive turns
+      min_lookahead_dist: 0.2  # Reduced from 0.3 for maximum responsiveness
+      max_lookahead_dist: 0.6  # Reduced from 1.2 for tight control
+
+      # CRITICAL: Disable rotate-in-place behavior
+      use_rotate_to_heading: false
+      rotate_to_heading_min_angle: 1.57  # irrelevant since rotate disabled
+
+      # Allow backward movement (matching your min_vel_x: -0.8)
+      allow_reversing: true
+
+      # Collision detection and safety (matching your current settings)
+      use_collision_detection: true
+      transform_tolerance: 0.3  # Matches your current setting
+      regulate_max_linear_velocity: true
+      use_velocity_scaled_lookahead_dist: true
+      min_approach_linear_velocity: 0.3  # Prevents stopping near goals
+
+      # Goal tolerance and safety (matching your current settings)
+      goal_dist_tol: 0.4      # Matches your xy_goal_tolerance: 0.4
+      transform_tolerance: 0.3
+      use_interpolation: true
+      
+      # Additional safety parameters
+      max_allowed_time_with_collision: 0.5  # Matches your current setting
+    
+    # Frame configuration for forklift
+    robot_base_frame: "base_link"
+    global_frame: "map"
+    odom_frame: "odom"
+    
+    # Additional frame validation parameters
+    base_frame_id: "base_link"
+    odom_frame_id: "odom"
+    global_frame_id: "map"
+    
+    # Costmap frame references
+    global_costmap: global_costmap
+    local_costmap: local_costmap
+    
+    # Prevent frame override
+    use_costmap_frames: false
+    inherit_costmap_frames: false
+    
+    # Force costmap frame usage
+    costmap_frame_priority: false
+    
+    # Forklift-specific safety parameters
+    safety_timeout: 20.0
+    emergency_stop_timeout: 5.0
+    max_steering_angle: 0.785  # 45 degrees in radians
+    min_turning_radius: 3.0    # Minimum turning radius in meters
+    load_center_distance: 0.6  # Distance from rear axle to load center
+    wheelbase: 0.55             # Distance between front and rear axles
+    track_width: 0.407           # Distance between left and right wheels

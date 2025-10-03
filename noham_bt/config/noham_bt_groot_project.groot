@@ -1,0 +1,22 @@
+{
+  "version": "1.0",
+  "project_name": "Noham Behavior Trees",
+  "description": "Behavior trees for Noham robotics platform",
+  "trees": [
+    {
+      "name": "Forklift Mission Tree",
+      "file_path": "forklift_mission_tree.xml",
+      "description": "Complete forklift mission sequence with navigation and actions"
+    },
+    {
+      "name": "Room Exploration Tree", 
+      "file_path": "room_exploration_tree.xml",
+      "description": "Spot robot room navigation with rotations"
+    }
+  ],
+  "metadata": {
+    "author": "Noham Robotics",
+    "created": "2024",
+    "bt_version": "4.6"
+  }
+}

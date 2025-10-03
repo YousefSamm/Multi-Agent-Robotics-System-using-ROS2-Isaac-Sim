@@ -1,0 +1,23 @@
+recoveries_server:
+  ros__parameters:
+    costmap_topic: local_costmap/costmap_raw
+    footprint_topic: local_costmap/published_footprint
+    cycle_frequency: 10.0
+    behavior_plugins: ["backup", "wait"]  # Removed spin for forklift safety
+    
+    global_frame: odom
+    robot_base_frame: "base_link"
+    transform_timeout: 0.3
+    use_sim_time: true
+    simulate_ahead_time: 2.0
+    
+    # Backup recovery behavior - forklift-appropriate
+    backup:
+      plugin: "nav2_behaviors/BackUp"
+      backup_dist: 0.3  # Conservative backup distance for forklift
+      backup_speed: 0.2  # Slow backup speed for safety
+      
+    # Wait recovery behavior
+    wait:
+      plugin: "nav2_behaviors/Wait"
+      wait_duration: 3.0  # Shorter wait for faster recovery

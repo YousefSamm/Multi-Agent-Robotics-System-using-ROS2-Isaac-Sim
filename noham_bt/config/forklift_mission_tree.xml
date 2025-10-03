@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<root BTCPP_format="4" main_tree_to_execute="ForkliftMissionTree">
+    <BehaviorTree ID="ForkliftMissionTree">
+        <Sequence name="ForkliftMission">
+            <!-- Node 1: Navigate to first position -->
+            <Action ID="NavigateToPose" name="NavigateToFirstPosition" target_pose="25.0,0.0,0.0,0.0,0.0,-1.57"/>
+            
+            <!-- Node 2: Forklift approach -->
+            <Action ID="ForkliftApproach" name="ForkliftApproachAction"/>
+            
+            <!-- Node 3: Lift up -->
+            <Action ID="LifterAction" name="LiftUp" lift="true"/>
+            
+            <!-- Node 4: Navigate to second position -->
+            <Action ID="NavigateToPose" name="NavigateToSecondPosition" target_pose="27.0,0.0,0.0,0.0,0.0,3.14"/>
+            
+            <!-- Node 5: Navigate to final position -->
+            <Action ID="NavigateToPose" name="NavigateToFinalPosition" target_pose="-0.721848,1.78605,0.0,0.0,0.0,1.57026"/>
+            
+            <!-- Node 6: Lower lift -->
+            <Action ID="LifterAction" name="LiftDown" lift="false"/>
+        </Sequence>
+    </BehaviorTree>
+</root>

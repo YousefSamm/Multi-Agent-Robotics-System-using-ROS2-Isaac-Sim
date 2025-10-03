@@ -1,0 +1,140 @@
+planner_server:
+  ros__parameters:
+    expected_planner_frequency: 10.0  # Reduced frequency for forklift safety
+    use_sim_time: True
+    planner_plugins: ["GridBased"]
+    GridBased:
+      plugin: "nav2_smac_planner/SmacPlannerHybrid"
+      # Reeds-Shepp curve configuration
+      tolerance: 0.5
+      downsample_costmap: false
+      downsampling_factor: 1
+      
+      # Enable Reeds-Shepp curves
+      allow_unknown: true
+      max_iterations: 1000000
+      max_on_approach_iterations: 1000
+      max_planning_time: 5.0
+      
+      # Motion model for Ackermann steering
+      motion_model_for_search: "REEDS_SHEPP"
+      angle_quantization_bins: 72
+      minimum_turning_radius: 2.0
+      reverse_penalty: 2.0
+      change_penalty: 0.0
+      non_straight_penalty: 1.2
+      cost_penalty: 2.0
+      
+      retrospective_penalty: 0.015
+      lookup_table_size: 20.0
+      cache_obstacle_heuristic: false
+      allow_reverse_expansion: true
+      use_final_approach_orientation: true
+      smooth_path: true
+
+smoother_server:
+  ros__parameters:
+    smoother_plugins: ["SmoothPath"]
+    use_sim_time: True
+    
+    SmoothPath:
+      plugin: "nav2_constrained_smoother/ConstrainedSmoother"
+      reversing_enabled: true
+      path_downsampling_factor: 1
+      path_upsampling_factor: 3
+      keep_start_orientation: true
+      keep_goal_orientation: true
+      minimum_turning_radius: 2.0
+      w_curve: 100.0
+      w_dist: 0.01
+      w_smooth: 100000.0
+      w_cost: 0.001
+      w_cost_cusp_multiplier: 1.0
+      cusp_zone_length: 1.0
+      w_stationary: 1000.0
+      min_movement_threshold: 0.05
+      optimizer:
+        max_iterations: 200
+        debug_optimizer: false
+        linear_solver_type: "SPARSE_NORMAL_CHOLESKY"
+        gradient_tol: 1e-10
+        fn_tol: 1e-8
+        param_tol: 1e-16
+
+# Controller configuration moved to forklift_controller.yaml to avoid conflicts
+# The controller_server section has been removed from this file
+
+global_costmap:
+  global_costmap:
+    ros__parameters:
+      update_frequency: 1.0
+      publish_frequency: 1.0
+      global_frame: "map"
+      robot_base_frame: "base_link"
+      use_sim_time: True
+      transform_tolerance: 2.0
+      message_filter_timeout: 2.0
+      message_filter_queue_size: 100
+      robot_radius: 0.3
+      resolution: 0.1
+      track_unknown_space: true
+      plugins: ["static_layer", "inflation_layer", "obstacle_layer"]
+
+      static_layer:
+        plugin: "nav2_costmap_2d::StaticLayer"
+        map_subscribe_transient_local: True
+
+      inflation_layer:
+        plugin: "nav2_costmap_2d::InflationLayer"
+        cost_scaling_factor: 2.0
+        inflation_radius: 0.45  # Increased from 0.3 for forklift safety
+        lethal_cost_threshold: 253
+        unknown_cost_value: 255
+
+      obstacle_layer:
+        plugin: "nav2_costmap_2d::ObstacleLayer"
+        enabled: True
+        observation_sources: scan
+        scan:
+          topic: /scan
+          max_obstacle_height: 2.0
+          clearing: True
+          marking: True
+          data_type: "LaserScan"
+          raytrace_max_range: 3.0
+          raytrace_min_range: 0.0
+          obstacle_max_range: 2.5
+          obstacle_min_range: 0.0
+          observation_persistence: 0.0
+          expected_update_rate: 0.0
+          inf_is_valid: false
+          transform_tolerance: 2.0
+          observation_persistence: 0.0
+          expected_update_rate: 0.0
+
+      always_send_full_costmap: True
+
+local_costmap:
+  local_costmap:
+    ros__parameters:
+      update_frequency: 5.0
+      publish_frequency: 2.0
+      global_frame: "odom"
+      robot_base_frame: "base_link"
+      use_sim_time: True
+      transform_tolerance: 2.0
+      message_filter_timeout: 2.0
+      message_filter_queue_size: 100
+      rolling_window: true
+      width: 0.3
+      height: 1.0
+      resolution: 0.1
+      robot_radius: 0.5
+      plugins: ["inflation_layer"]
+
+      inflation_layer:
+        plugin: "nav2_costmap_2d::InflationLayer"
+        cost_scaling_factor: 2.0
+        inflation_radius: 0.3  # Increased from 0.3 for forklift safety
+        lethal_cost_threshold: 253
+        unknown_cost_value: 255

@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<root BTCPP_format="4" main_tree_to_execute="MobileManipulatorTree">
+    <BehaviorTree ID="MobileManipulatorTree">
+        <Sequence name="MobileManipulatorMission">
+            <!-- Node 1: Navigate to first position (14.5, -6.4, 0) with orientation (0,0,0,1) -->
+            <Action ID="NavigateToPose" name="NavigateToFirstPosition" target_pose="14.5,-6.4,0.0,0.0,0.0,0.0"/>
+            
+            <!-- Node 2: Mobile manipulator approach to AprilTag -->
+            <Action ID="MobileManipulatorApproach" name="MobileManipulatorApproachAction"/>
+            
+            <!-- Node 3: Arm planning - pick command -->
+            <Action ID="ArmPlanning" name="ArmPlanningPick" command="pick"/>
+            
+            <!-- Node 4: Gripper action - grasp command -->
+            <Action ID="GripperAction" name="GripperGrasp" command="grasp"/>
+            
+            <!-- Node 5: Arm planning - return to initial position -->
+            <Action ID="ArmPlanning" name="ArmPlanningInitPos" command="init_pos"/>
+            
+            <!-- Node 6: Navigate back to first position (14.5, -6.4, 0) with orientation (0,0,0,1) -->
+            <Action ID="NavigateToPose" name="NavigateBackToFirstPosition" target_pose="14.5,-6.4,0.0,0.0,0.0,0.0"/>
+            
+            <!-- Node 7: Navigate to drop position (0, 1.0, 0) with orientation (0, 0, 0.717, 0.717) - 90 degrees -->
+            <Action ID="NavigateToPose" name="NavigateToDropPosition" target_pose="0.0,1.0,0.0,0.0,0.0,1.5708"/>
+            
+            <!-- Node 8: Arm planning - drop command -->
+            <Action ID="ArmPlanning" name="ArmPlanningDrop" command="drop"/>
+            
+            <!-- Node 9: Gripper action - drop command -->
+            <Action ID="GripperAction" name="GripperDrop" command="drop"/>
+        </Sequence>
+    </BehaviorTree>
+</root>

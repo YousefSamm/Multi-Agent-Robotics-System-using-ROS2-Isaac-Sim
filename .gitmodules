@@ -1,0 +1,15 @@
+[submodule "apriltag_ros"]
+	path = apriltag_ros
+	url = https://github.com/christianrauch/apriltag_ros.git
+[submodule "isaac_ros_nitros"]
+	path = isaac_ros_nitros
+	url = https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_nitros.git
+[submodule "magic_enum"]
+	path = magic_enum
+	url = https://github.com/Neargye/magic_enum.git
+[submodule "isaac_ros_common"]
+	path = isaac_ros_common
+	url = https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_common.git
+[submodule "isaac_ros_apriltag"]
+	path = isaac_ros_apriltag
+	url = https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_apriltag.git
