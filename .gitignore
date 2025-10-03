@@ -53,11 +53,13 @@ backup/
 
 # Isaac Sim large assets and collected files
 isaacsim/config/backup/
-isaacsim/config/Collected_*/
 isaacsim/config/__pycache__/
 
-# Large binary files
-*.usd
+# Exclude only the large omniverse content directories within Collected folders
+isaacsim/config/Collected_*/omniverse-content-production.s3-us-west-2.amazonaws.com/
+isaacsim/config/Collected_*/home/
+
+# Large binary files (but allow small USD files)
 *.usda
 *.usdc
 *.pt
