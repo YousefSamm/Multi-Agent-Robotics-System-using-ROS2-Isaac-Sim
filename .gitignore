@@ -3,6 +3,7 @@ build/
 install/
 log/
 devel/
+**/log/
 
 # Python cache
 __pycache__/
@@ -20,6 +21,8 @@ __pycache__/
 *.swp
 *.swo
 *~
+**/.vscode/
+**/.idea/
 
 # OS files
 .DS_Store
