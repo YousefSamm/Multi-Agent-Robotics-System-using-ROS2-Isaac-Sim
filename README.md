@@ -10,7 +10,7 @@ This repository contains a comprehensive multi-agent robotic system implementati
 - ROS2 Humble
 - NVIDIA Isaac Sim 4.5+
 - CUDA-compatible GPU
-- Python 3.8+
+- Python 3.10+
 
 ### Installation
 
@@ -57,9 +57,10 @@ This repository contains a comprehensive multi-agent robotic system implementati
 ## 🤖 Supported Robots
 
 ### Mobile Manipulator
-- **Robot**: Husky + Jaco arm
-- **Capabilities**: Navigation, manipulation, object detection
+- **Robot**: Nova Carter Base + Jaco arm
+- **Capabilities**: Navigation, manipulation, object detection through apriltags
 - **Launch**: `ros2 launch isaacsim run_noham_mobile_manipulator.launch.py`
+- **Note**: For the mobile manipulator, you must also launch the MoveIt2 controllers through the `kinova_moveit_config` package
 
 ### Forklift
 - **Robot**: Custom forklift model
@@ -75,15 +76,14 @@ This repository contains a comprehensive multi-agent robotic system implementati
 
 ### Running Simulations
 
-1. **Start Isaac Sim:**
-   ```bash
-   ros2 launch isaacsim run_isaacsim.launch.py
-   ```
 
-2. **Launch specific robot:**
+1. **Launch specific robot:**
    ```bash
    # Mobile manipulator
    ros2 launch isaacsim run_noham_mobile_manipulator.launch.py
+   
+   # IMPORTANT: For mobile manipulator, also launch MoveIt2 controllers:
+   ros2 launch kinova_moveit_config noham_jaco.launch.py
    
    # Forklift
    ros2 launch isaacsim run_noham_forklift.launch.py
@@ -91,10 +91,20 @@ This repository contains a comprehensive multi-agent robotic system implementati
    # Spot robot
    ros2 launch isaacsim run_noham_spot.launch.py
    ```
+### Navigation and Path Planning
+
+2. **Launch navigation stack:**
+   ```bash
+   # Mobile manipulator navigation
+   ros2 launch noham_path_planner mobile_manipulator_path_planner.launch.py
+   
+   # Forklift navigation
+   ros2 launch noham_path_planner forklift_path_planner.launch.py
+   ```
 
 ### Behavior Tree Operations
 
-1. **Run behavior trees:**
+3. **Run behavior trees:**
    ```bash
    # Mobile manipulator behavior tree
    ros2 launch noham_bt mobile_manipulator_bt.launch.py
@@ -106,16 +116,7 @@ This repository contains a comprehensive multi-agent robotic system implementati
    ros2 launch noham_bt spot_bt.launch.py
    ```
 
-### Navigation and Path Planning
 
-1. **Launch navigation stack:**
-   ```bash
-   # Mobile manipulator navigation
-   ros2 launch noham_path_planner mobile_manipulator_path_planner.launch.py
-   
-   # Forklift navigation
-   ros2 launch noham_path_planner forklift_path_planner.launch.py
-   ```
 
 ## 🛠️ Development
 
