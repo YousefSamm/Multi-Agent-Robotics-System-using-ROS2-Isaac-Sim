@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="Kinova">
+    <xacro:arg name="initial_positions_file" default="initial_positions.yaml" />
+
+    <!-- Import Kinova urdf file -->
+    <xacro:include filename="$(find kinova_moveit_config)/urdf/Kinova.urdf" />
+
+    <!-- Import control_xacro -->
+    <xacro:include filename="Kinova.ros2_control.xacro" />
+
+
+    <xacro:Kinova_ros2_control name="FakeSystem" initial_positions_file="$(arg initial_positions_file)"/>
+
+</robot>

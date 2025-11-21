@@ -1,0 +1,25 @@
+moveit_setup_assistant_config:
+  urdf:
+    package: kinova_moveit_config
+    relative_path: urdf/Kinova.urdf
+  srdf:
+    relative_path: config/Kinova.srdf
+  package_settings:
+    author_name: YousefSammour
+    author_email: yusef.sammour@gmail.com
+    generated_timestamp: 1754229090
+  control_xacro:
+    command:
+      - position
+    state:
+      - position
+      - velocity
+  modified_urdf:
+    xacros:
+      - control_xacro
+  control_xacro:
+    command:
+      - position
+    state:
+      - position
+      - velocity

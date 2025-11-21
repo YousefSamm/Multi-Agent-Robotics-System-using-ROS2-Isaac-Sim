@@ -1,0 +1,462 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot name="Kinova">
+  <joint name="j2n6s300_joint_1" type="continuous">
+    <origin xyz="0. 0. 0.15675" rpy="3.1415927 1.5707961 3.1415927"/>
+    <parent link="j2n6s300_link_base"/>
+    <child link="j2n6s300_link_1"/>
+    <axis xyz="1. 0. 0."/>
+  </joint>
+  <joint name="j2n6s300_joint_2" type="revolute">
+    <origin xyz="-0.11875 0.0016 -0. " rpy="-3.1415925 0.0000001 -1.5707964"/>
+    <parent link="j2n6s300_link_1"/>
+    <child link="j2n6s300_link_2"/>
+    <axis xyz="1. 0. 0."/>
+    <limit lower="0.8203047" upper="5.4628806" effort="4800." velocity="0.6283185"/>
+  </joint>
+  <joint name="j2n6s300_joint_3" type="revolute">
+    <origin xyz="-0. -0.41 0. " rpy="-3.1415927 -0.0000002 3.1415925"/>
+    <parent link="j2n6s300_link_2"/>
+    <child link="j2n6s300_link_3"/>
+    <axis xyz="1. 0. 0."/>
+    <limit lower="0.3316125" upper="5.9515727" effort="2400." velocity="0.6283185"/>
+  </joint>
+  <joint name="j2n6s300_joint_4" type="continuous">
+    <origin xyz="-0.0114 0.2073 -0. " rpy="-3.1415925 0.0000001 -1.5707964"/>
+    <parent link="j2n6s300_link_3"/>
+    <child link="j2n6s300_link_4"/>
+    <axis xyz="1. 0. 0."/>
+  </joint>
+  <joint name="j2n6s300_joint_5" type="continuous">
+    <origin xyz="-0.06414 -0.03703 0. " rpy="-3.1415925 -0. 1.0471976"/>
+    <parent link="j2n6s300_link_4"/>
+    <child link="j2n6s300_link_5"/>
+    <axis xyz="1. 0. 0."/>
+  </joint>
+  <joint name="j2n6s300_joint_6" type="continuous">
+    <origin xyz="-0.06414 -0.03703 0. " rpy="-3.1415925 0. 1.0471976"/>
+    <parent link="j2n6s300_link_5"/>
+    <child link="j2n6s300_link_6"/>
+    <axis xyz="1. 0. 0."/>
+  </joint>
+  <joint name="j2n6s300_joint_end_effector" type="fixed">
+    <origin xyz="-0.16 0. 0. " rpy="-1.5707964 0.0000002 0. "/>
+    <parent link="j2n6s300_link_6"/>
+    <child link="j2n6s300_end_effector"/>
+  </joint>
+  <joint name="j2n6s300_joint_finger_1" type="revolute">
+    <origin xyz="-0.11467 0.03126 -0.00279" rpy="-1.9685519 -1.3587914 -2.1017172"/>
+    <parent link="j2n6s300_link_6"/>
+    <child link="j2n6s300_link_finger_1"/>
+    <axis xyz="1. 0. 0."/>
+    <limit lower="0." upper="1.51" effort="120." velocity="1."/>
+  </joint>
+  <joint name="j2n6s300_joint_finger_2" type="revolute">
+    <origin xyz="-0.11482 -0.02707 -0.02226" rpy="0.649263 1.3861405 1.5707967"/>
+    <parent link="j2n6s300_link_6"/>
+    <child link="j2n6s300_link_finger_2"/>
+    <axis xyz="1. 0. 0."/>
+    <limit lower="0." upper="1.51" effort="120." velocity="1."/>
+  </joint>
+  <joint name="j2n6s300_joint_finger_3" type="revolute">
+    <origin xyz="-0.11482 -0.02707 0.02226" rpy="-2.49233 1.3861405 -1.5707963"/>
+    <parent link="j2n6s300_link_6"/>
+    <child link="j2n6s300_link_finger_3"/>
+    <axis xyz="1. 0. 0."/>
+    <limit lower="0." upper="1.51" effort="120." velocity="1."/>
+  </joint>
+  <joint name="j2n6s300_joint_finger_tip_1" type="revolute">
+    <origin xyz="0. -0.003 -0.044" rpy="-0. -0.0000001 -0.0000001"/>
+    <parent link="j2n6s300_link_finger_1"/>
+    <child link="j2n6s300_link_finger_tip_1"/>
+    <axis xyz="1. 0. 0."/>
+    <limit lower="0." upper="1.9999999" effort="120." velocity="1."/>
+  </joint>
+  <joint name="j2n6s300_joint_finger_tip_2" type="revolute">
+    <origin xyz="-0. -0.003 -0.044" rpy="0.0000001 -0. -0. "/>
+    <parent link="j2n6s300_link_finger_2"/>
+    <child link="j2n6s300_link_finger_tip_2"/>
+    <axis xyz="1. 0. 0."/>
+    <limit lower="0." upper="1.9999999" effort="120." velocity="1."/>
+  </joint>
+  <joint name="j2n6s300_joint_finger_tip_3" type="revolute">
+    <origin xyz="0. -0.003 -0.044" rpy="0.0000001 0. -0.0000001"/>
+    <parent link="j2n6s300_link_finger_3"/>
+    <child link="j2n6s300_link_finger_tip_3"/>
+    <axis xyz="1. 0. 0."/>
+    <limit lower="0." upper="1.9999999" effort="120." velocity="1."/>
+  </joint>
+  <!--joint name="root_joint" type="fixed">
+    <origin xyz="0. 0. 0." rpy="0. 0. 0."/>
+    <parent link="Root"/>
+    <child link="j2n6s300_link_base"/>
+  </joint>
+  <link name="Root"/-->
+  <link name="j2n6s300_end_effector">
+    <inertial>
+      <origin xyz="0. 0. 0." rpy="0. 0. 0."/>
+      <mass value="0.0000001"/>
+      <inertia ixx="0.001" ixy="0." ixz="0." iyy="0.001" iyz="0." izz="0.001"/>
+    </inertial>
+  </link>
+  <link name="j2n6s300_link_1">
+    <inertial>
+      <origin xyz="0. -0.002 -0.0605" rpy="0. 0. 0."/>
+      <mass value="0.7477"/>
+      <inertia ixx="0.0015203" ixy="0." ixz="0." iyy="0.0015203" iyz="0." izz="0.0005982"/>
+    </inertial>
+    <visual>
+      <origin xyz="0. 0. 0." rpy="0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_1_visuals_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="0. 0. 0." rpy="0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_1_visuals_mesh_1.obj" scale="1. 1. 1."/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="0. 0. 0." rpy="0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_1_collisions_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0. 0. 0." rpy="0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_1_collisions_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="j2n6s300_link_2">
+    <inertial>
+      <origin xyz="0. -0.2065 -0.01 " rpy="0. 0. 0."/>
+      <mass value="0.99"/>
+      <inertia ixx="0.0105022" ixy="0." ixz="0." iyy="0.000792" iyz="0." izz="0.0105022"/>
+    </inertial>
+    <visual>
+      <origin xyz="0. 0. 0." rpy="0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_2_visuals_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="0. 0. 0." rpy="0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_2_visuals_mesh_1.obj" scale="1. 1. 1."/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="0. 0. 0." rpy="0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_2_collisions_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0. 0. 0." rpy="0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_2_collisions_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="j2n6s300_link_3">
+    <inertial>
+      <origin xyz="0. 0.081 -0.0086" rpy="0. 0. 0."/>
+      <mass value="0.6763"/>
+      <inertia ixx="0.0014202" ixy="0." ixz="0." iyy="0.0003043" iyz="0." izz="0.0014202"/>
+    </inertial>
+    <visual>
+      <origin xyz="0. 0. 0." rpy="0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_3_visuals_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="0. 0. 0." rpy="0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_3_visuals_mesh_1.obj" scale="1. 1. 1."/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="0. 0. 0." rpy="0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_3_collisions_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0. 0. 0." rpy="0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_3_collisions_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="j2n6s300_link_4">
+    <inertial>
+      <origin xyz="0. -0.037 -0.0642" rpy="0. 0. 0."/>
+      <mass value="0.426367"/>
+      <inertia ixx="0.0000773" ixy="0." ixz="0." iyy="0.0000773" iyz="0." izz="0.0001428"/>
+    </inertial>
+    <visual>
+      <origin xyz="0. -0. 0." rpy="0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_4_visuals_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="0. -0. 0." rpy="0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_4_visuals_mesh_1.obj" scale="1. 1. 1."/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="0. -0. 0." rpy="0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_4_collisions_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0. -0. 0." rpy="0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_4_collisions_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="j2n6s300_link_5">
+    <inertial>
+      <origin xyz="0. -0.037 -0.0642" rpy="0. 0. 0."/>
+      <mass value="0.426367"/>
+      <inertia ixx="0.0000773" ixy="0." ixz="0." iyy="0.0000773" iyz="0." izz="0.0001428"/>
+    </inertial>
+    <visual>
+      <origin xyz="0. 0. 0." rpy="-0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_5_visuals_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="0. 0. 0." rpy="-0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_5_visuals_mesh_1.obj" scale="1. 1. 1."/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="0. 0. 0." rpy="-0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_5_collisions_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0. 0. 0." rpy="-0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_5_collisions_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="j2n6s300_link_6">
+    <inertial>
+      <origin xyz="0. 0. -0.06" rpy="0. 0. 0."/>
+      <mass value="0.99"/>
+      <inertia ixx="0.0003453" ixy="0." ixz="0." iyy="0.0003453" iyz="0." izz="0.0005816"/>
+    </inertial>
+    <visual>
+      <origin xyz="0. 0. 0." rpy="-0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_6_visuals_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="0. 0. 0." rpy="-0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_6_visuals_mesh_1.obj" scale="1. 1. 1."/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="0. 0. 0." rpy="-0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_6_collisions_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0. 0. 0." rpy="-0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_6_collisions_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="j2n6s300_link_base">
+    <inertial>
+      <origin xyz="0. 0. 0.1255" rpy="0. 0. 0."/>
+      <mass value="0.46784"/>
+      <inertia ixx="0.0009513" ixy="0." ixz="0." iyy="0.0009513" iyz="0." izz="0.0003743"/>
+    </inertial>
+    <visual>
+      <origin xyz="0. 0. 0." rpy="0. 0. 0."/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_base_visuals_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="0. 0. 0." rpy="0. 0. 0."/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_base_collisions_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0. 0. 0." rpy="0. 0. 0."/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_base_collisions_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="j2n6s300_link_finger_1">
+    <inertial>
+      <origin xyz="0.022 0. 0. " rpy="0. 0. 0."/>
+      <mass value="0.01"/>
+      <inertia ixx="0.0000008" ixy="0." ixz="0." iyy="0.0000008" iyz="0." izz="0.0000001"/>
+    </inertial>
+    <visual>
+      <origin xyz="0. 0. -0." rpy="0.0000001 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_finger_1_visuals_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="0. 0. -0." rpy="0.0000001 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_finger_1_collisions_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0. 0. -0." rpy="0.0000001 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_finger_1_collisions_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="j2n6s300_link_finger_2">
+    <inertial>
+      <origin xyz="0.022 0. 0. " rpy="0. 0. 0."/>
+      <mass value="0.01"/>
+      <inertia ixx="0.0000008" ixy="0." ixz="0." iyy="0.0000008" iyz="0." izz="0.0000001"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0. 0. 0." rpy="0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_finger_2_visuals_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="-0. 0. 0." rpy="0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_finger_2_collisions_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="-0. 0. 0." rpy="0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_finger_2_collisions_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="j2n6s300_link_finger_3">
+    <inertial>
+      <origin xyz="0.022 0. 0. " rpy="0. 0. 0."/>
+      <mass value="0.01"/>
+      <inertia ixx="0.0000008" ixy="0." ixz="0." iyy="0.0000008" iyz="0." izz="0.0000001"/>
+    </inertial>
+    <visual>
+      <origin xyz="0. -0. -0." rpy="0.0000001 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_finger_3_visuals_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="0. -0. -0." rpy="0.0000001 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_finger_3_collisions_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0. -0. -0." rpy="0.0000001 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_finger_3_collisions_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="j2n6s300_link_finger_tip_1">
+    <inertial>
+      <origin xyz="0.022 0. 0. " rpy="0. 0. 0."/>
+      <mass value="0.01"/>
+      <inertia ixx="0.0000008" ixy="0." ixz="0." iyy="0.0000008" iyz="0." izz="0.0000001"/>
+    </inertial>
+    <visual>
+      <origin xyz="0. 0. 0." rpy="0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_finger_tip_1_visuals_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="0. 0. 0." rpy="0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_finger_tip_1_collisions_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="0. 0. 0." rpy="0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_finger_tip_1_collisions_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="j2n6s300_link_finger_tip_2">
+    <inertial>
+      <origin xyz="0.022 0. 0. " rpy="0. 0. 0."/>
+      <mass value="0.01"/>
+      <inertia ixx="0.0000008" ixy="0." ixz="0." iyy="0.0000008" iyz="0." izz="0.0000001"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0. -0. 0." rpy="0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_finger_tip_2_visuals_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="-0. -0. 0." rpy="0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_finger_tip_2_collisions_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="-0. -0. 0." rpy="0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_finger_tip_2_collisions_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </collision>
+  </link>
+  <link name="j2n6s300_link_finger_tip_3">
+    <inertial>
+      <origin xyz="0.022 0. 0. " rpy="0. 0. 0."/>
+      <mass value="0.01"/>
+      <inertia ixx="0.0000008" ixy="0." ixz="0." iyy="0.0000008" iyz="0." izz="0.0000001"/>
+    </inertial>
+    <visual>
+      <origin xyz="-0. 0. 0." rpy="0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_finger_tip_3_visuals_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </visual>
+    <visual>
+      <origin xyz="-0. 0. 0." rpy="0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_finger_tip_3_collisions_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </visual>
+    <collision>
+      <origin xyz="-0. 0. 0." rpy="0. 1.5707963 0. "/>
+      <geometry>
+        <mesh filename="package://kinova_moveit_config/meshes/j2n6s300_link_finger_tip_3_collisions_mesh_0.obj" scale="1. 1. 1."/>
+      </geometry>
+    </collision>
+  </link>
+</robot>

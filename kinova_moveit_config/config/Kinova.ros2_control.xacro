@@ -1,0 +1,101 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+    <xacro:macro name="Kinova_ros2_control" params="name initial_positions_file">
+        <xacro:property name="initial_positions" value="${load_yaml(initial_positions_file)['initial_positions']}"/>
+
+        <ros2_control name="${name}" type="system">
+            <hardware>
+                <!-- By default, set up controllers for simulation. This won't work on real hardware -->
+                <!--plugin>mock_components/GenericSystem</plugin-->
+                <plugin>topic_based_ros2_control/TopicBasedSystem</plugin>
+                <param name="joint_commands_topic">/isaac_joint_command</param>
+                <param name="joint_states_topic">/isaac_joint_states</param>
+            </hardware>
+            <joint name="j2n6s300_joint_1">
+                <command_interface name="position"/>
+                <state_interface name="position">
+                  <param name="initial_value">${initial_positions['j2n6s300_joint_1']}</param>
+                </state_interface>
+                <state_interface name="velocity"/>
+            </joint>
+            <joint name="j2n6s300_joint_2">
+                <command_interface name="position"/>
+                <state_interface name="position">
+                  <param name="initial_value">${initial_positions['j2n6s300_joint_2']}</param>
+                </state_interface>
+                <state_interface name="velocity"/>
+            </joint>
+            <joint name="j2n6s300_joint_3">
+                <command_interface name="position"/>
+                <state_interface name="position">
+                  <param name="initial_value">${initial_positions['j2n6s300_joint_3']}</param>
+                </state_interface>
+                <state_interface name="velocity"/>
+            </joint>
+            <joint name="j2n6s300_joint_4">
+                <command_interface name="position"/>
+                <state_interface name="position">
+                  <param name="initial_value">${initial_positions['j2n6s300_joint_4']}</param>
+                </state_interface>
+                <state_interface name="velocity"/>
+            </joint>
+            <joint name="j2n6s300_joint_5">
+                <command_interface name="position"/>
+                <state_interface name="position">
+                  <param name="initial_value">${initial_positions['j2n6s300_joint_5']}</param>
+                </state_interface>
+                <state_interface name="velocity"/>
+            </joint>
+            <joint name="j2n6s300_joint_6">
+                <command_interface name="position"/>
+                <state_interface name="position">
+                  <param name="initial_value">${initial_positions['j2n6s300_joint_6']}</param>
+                </state_interface>
+                <state_interface name="velocity"/>
+            </joint>
+            <joint name="j2n6s300_joint_finger_1">
+                <command_interface name="position"/>
+                <state_interface name="position">
+                  <param name="initial_value">${initial_positions['j2n6s300_joint_finger_1']}</param>
+                </state_interface>
+                <state_interface name="velocity"/>
+            </joint>
+            <!--joint name="j2n6s300_joint_finger_tip_1">
+                <command_interface name="position"/>
+                <state_interface name="position">
+                  <param name="initial_value">${initial_positions['j2n6s300_joint_finger_tip_1']}</param>
+                </state_interface>
+                <state_interface name="velocity"/>
+            </joint-->
+            <joint name="j2n6s300_joint_finger_2">
+                <command_interface name="position"/>
+                <state_interface name="position">
+                  <param name="initial_value">${initial_positions['j2n6s300_joint_finger_2']}</param>
+                </state_interface>
+                <state_interface name="velocity"/>
+            </joint>
+            <!--joint name="j2n6s300_joint_finger_tip_2">
+                <command_interface name="position"/>
+                <state_interface name="position">
+                  <param name="initial_value">${initial_positions['j2n6s300_joint_finger_tip_2']}</param>
+                </state_interface>
+                <state_interface name="velocity"/>
+            </joint-->
+            <joint name="j2n6s300_joint_finger_3">
+                <command_interface name="position"/>
+                <state_interface name="position">
+                  <param name="initial_value">${initial_positions['j2n6s300_joint_finger_3']}</param>
+                </state_interface>
+                <state_interface name="velocity"/>
+            </joint>
+            <!--joint name="j2n6s300_joint_finger_tip_3">
+                <command_interface name="position"/>
+                <state_interface name="position">
+                  <param name="initial_value">${initial_positions['j2n6s300_joint_finger_tip_3']}</param>
+                </state_interface>
+                <state_interface name="velocity"/>
+            </joint-->
+
+        </ros2_control>
+    </xacro:macro>
+</robot>
