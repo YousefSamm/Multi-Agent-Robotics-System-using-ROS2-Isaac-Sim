@@ -41,8 +41,8 @@ This repository contains a comprehensive multi-agent robotic system implementati
 
 1. **Clone the repository with submodules:**
    ```bash
-   git clone --recurse-submodules https://github.com/YousefSamm/Multi-Agent-Robotis-System-using-ROS2-Isaac-Sim.git
-   cd Multi-Agent-Robotis-System-using-ROS2-Isaac-Sim
+   git clone --recurse-submodules https://github.com/YousefSamm/Multi-Agent-Robotics-System-using-ROS2-Isaac-Sim.git
+   cd Multi-Agent-Robotics-System-using-ROS2-Isaac-Sim
    ```
 
 2. **If you already cloned without submodules, initialize them:**
