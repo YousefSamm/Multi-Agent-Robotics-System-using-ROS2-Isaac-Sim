@@ -1,17 +1,33 @@
 # Multi-Agent Robotic System using ROS2 & Isaac Sim
 
+<div align="center">
+
 [![ROS2](https://img.shields.io/badge/ROS2-Humble-blue)](https://docs.ros.org/en/humble/)
 [![Isaac Sim](https://img.shields.io/badge/Isaac%20Sim-4.5+-green)](https://developer.nvidia.com/isaac-sim)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/Python-3.10+-yellow)](https://www.python.org/)
+[![License](https://img.shields.io/badge/License-MIT-red.svg)](LICENSE)
 [![Platform](https://img.shields.io/badge/Platform-Ubuntu%2022.04-orange)](https://ubuntu.com/)
+
+**Advanced multi-agent robotics platform featuring autonomous navigation, manipulation, and coordination**
+
+[🎥 View Demo](#-demo-video) • [📖 Documentation](#-table-of-contents) • [🚀 Quick Start](#-quick-start)
+
+</div>
+
+---
+
+## 📝 Overview
 
 This repository contains a comprehensive multi-agent robotic system implementation using ROS2 and NVIDIA Isaac Sim. The system includes various robotic agents including mobile manipulators, forklifts, and Spot robots, with integrated behavior trees, path planning, and simulation capabilities.
 
 ## 🎥 Demo Video
 
-[![Watch Demo Video](https://img.shields.io/badge/▶️-Watch%20Demo%20Video-red?style=for-the-badge)](https://github.com/YousefSamm/Multi-Agent-Robotis-System-using-ROS2-Isaac-Sim/blob/main/Magic%20Movie.MOV?raw=true)
+[![Watch Demo Video](https://img.shields.io/badge/▶️-Watch%20Demo%20Video-red?style=for-the-badge)](https://github.com/YousefSamm/Multi-Agent-Robotics-System-using-ROS2-Isaac-Sim/blob/main/Magic%20Movie.MOV?raw=true)
 
 *Click the badge above to download and view the demo video.*
+
+**Alternative viewing options:**
+- 🎬 [View on Instagram](https://www.instagram.com/reel/DOgyPkKj2HS/?igsh=MTA4dmgxaTZ3OTJ1MQ==)
 
 ## 🎯 Project Overview
 
@@ -39,9 +55,6 @@ This system demonstrates advanced robotics concepts including:
 - ✅ **Real-Time Path Planning** with Nav2 stack
 - ✅ **6DOF Manipulation** with MoveIt2 integration
 - ✅ **Reinforcement Learning** locomotion controllers (policy files included)
-```
-
----
 
 ## 📑 Table of Contents
 
@@ -52,8 +65,8 @@ This system demonstrates advanced robotics concepts including:
 - [Development](#️-development)
 - [Configuration](#-configuration)
 - [Troubleshooting](#-troubleshooting)
-- [Contributing](#-contributing)
 - [License](#-license)
+- [Author](#-author)
 
 ## 🚀 Quick Start
 
@@ -68,21 +81,21 @@ This system demonstrates advanced robotics concepts including:
 ### Installation
 
 1. **Clone the repository with submodules:**
-   ```bash
+```bash
    git clone --recurse-submodules https://github.com/YousefSamm/Multi-Agent-Robotics-System-using-ROS2-Isaac-Sim.git
    cd Multi-Agent-Robotics-System-using-ROS2-Isaac-Sim
-   ```
+```
 
 2. **If you already cloned without submodules, initialize them:**
-   ```bash
+```bash
    git submodule update --init --recursive
-   ```
+```
 
 3. **Build the workspace:**
-   ```bash
+```bash
    colcon build --symlink-install
    source install/setup.bash
-   ```
+```
 
 ## 📁 Project Structure
 
@@ -115,26 +128,34 @@ This system demonstrates advanced robotics concepts including:
 ### Mobile Manipulator
 - **Robot**: Nova Carter Base + Jaco arm
 - **Capabilities**: Navigation, manipulation, object detection through apriltags
-- **Launch**: `ros2 launch isaacsim run_noham_mobile_manipulator.launch.py`
+- **Launch**: 
+```bash
+  ros2 launch isaacsim run_noham_mobile_manipulator.launch.py
+```
 - **Note**: For the mobile manipulator, you must also launch the MoveIt2 controllers through the `kinova_moveit_config` package
 
 ### Forklift
 - **Robot**: Custom forklift model
 - **Capabilities**: Autonomous navigation, pallet manipulation
-- **Launch**: `ros2 launch isaacsim run_noham_forklift.launch.py`
+- **Launch**: 
+```bash
+  ros2 launch isaacsim run_noham_forklift.launch.py
+```
 
 ### Spot Robot
 - **Robot**: Boston Dynamics Spot
 - **Capabilities**: Quadrupedal locomotion, inspection
-- **Launch**: `ros2 launch isaacsim run_noham_spot.launch.py`
+- **Launch**: 
+```bash
+  ros2 launch isaacsim run_noham_spot.launch.py
+```
 
 ## 🎮 Usage
 
 ### Running Simulations
 
-
 1. **Launch specific robot:**
-   ```bash
+```bash
    # Mobile manipulator
    ros2 launch isaacsim run_noham_mobile_manipulator.launch.py
    
@@ -146,11 +167,12 @@ This system demonstrates advanced robotics concepts including:
    
    # Spot robot
    ros2 launch isaacsim run_noham_spot.launch.py
-   ```
+```
+
 ### Navigation and Path Planning
 
 2. **Launch navigation stack:**
-   ```bash
+```bash
    # Mobile manipulator navigation
    ros2 launch noham_path_planner mobile_manipulator_path_planner.launch.py
    
@@ -159,12 +181,12 @@ This system demonstrates advanced robotics concepts including:
    
    # Spot robot navigation
    ros2 launch noham_path_planner spot_path_planner.launch.py
-   ```
+```
 
 ### Behavior Tree Operations
 
 3. **Run behavior trees:**
-   ```bash
+```bash
    # Mobile manipulator behavior tree
    ros2 launch noham_bt mobile_manipulator_bt.launch.py
    
@@ -176,16 +198,14 @@ This system demonstrates advanced robotics concepts including:
    
    # Room navigation (simple demo)
    ros2 launch noham_bt room_navigation.launch.py
-   ```
+```
 
 ### Spot Robot Controller
 
 4. **Launch Spot robot controller:**
-   ```bash
+```bash
    ros2 launch spot_controller spot_controller.launch.py
-   ```
-
-
+```
 
 ## 🛠️ Development
 
@@ -206,7 +226,6 @@ git commit -m "Updated submodules to latest versions"
 ```
 
 ### Building Individual Packages
-
 ```bash
 # Build specific package
 colcon build --packages-select <package_name>
@@ -233,16 +252,16 @@ colcon build --packages-up-to <package_name>
 ### Common Issues
 
 1. **Submodule initialization failed:**
-   ```bash
+```bash
    git submodule update --init --recursive --force
-   ```
+```
 
 2. **Build errors:**
-   ```bash
+```bash
    # Clean and rebuild
    rm -rf build install log
    colcon build --symlink-install
-   ```
+```
 
 3. **Isaac Sim connection issues:**
    - Ensure Isaac Sim is running
@@ -254,29 +273,27 @@ colcon build --packages-up-to <package_name>
 - Check individual package README files for specific documentation
 - Review launch file parameters for customization options
 - Examine log files in the `log/` directory after building
+- Create an issue in this repository for bugs or questions
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. Individual submodules may have their own licenses.
+This project is licensed under the MIT License. Individual submodules may have their own licenses.
 
-## 🤝 Contributing
+## 👤 Author
 
-We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute to this project.
+**Yousef Sammour**  
+Mechatronics Engineering Graduate | Automation & Robotics Specialist
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+- 📧 Email: yusef.sammour@gmail.com
+- 💼 LinkedIn: [Yousef Sammour](https://www.linkedin.com/in/yousef-sammour-b0bb621a0/)
+- 🐙 GitHub: [@YousefSamm](https://github.com/YousefSamm)
+- 📍 Based in Homs, Syria
 
-For detailed contribution guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md).
+---
 
-## 📞 Support
+*Developed as graduation project for Bachelor of Mechatronic Engineering, Homs University (2025)*
 
-For issues and questions:
-- Create an issue in this repository
-- Check the documentation in individual packages
-- Review the troubleshooting section above
+**⭐ If you find this project useful, please consider giving it a star!**
 
 ---
 
