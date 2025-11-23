@@ -9,11 +9,11 @@ This repository contains a comprehensive multi-agent robotic system implementati
 
 ## 🎥 Demo Video
 
-https://github.com/YousefSamm/Multi-Agent-Robotis-System-using-ROS2-Isaac-Sim/raw/main/src/Magic%20Movie.MOV
+[![Watch Demo Video](https://img.shields.io/badge/▶️-Watch%20Demo%20Video-red?style=for-the-badge)](https://github.com/YousefSamm/Multi-Agent-Robotis-System-using-ROS2-Isaac-Sim/blob/main/Magic%20Movie.MOV?raw=true)
 
-*Click the link above to view the demo video. The video will open in a new tab.*
+*Click the badge above to download and view the demo video.*
 
-**Note:** For autoplay and looping functionality, the video can be converted to GIF format. I can help you convert it if you'd like!
+**Alternative:** For better compatibility and autoplay functionality, consider uploading to [YouTube](https://www.youtube.com) and embedding the video, or converting to GIF format for automatic looping.
 
 ## 📑 Table of Contents
 
