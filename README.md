@@ -31,6 +31,18 @@ This system demonstrates advanced robotics concepts including:
 | 🚜 Forklift | Autonomous navigation, pallet handling | Material transport |
 | 🐕 Boston Dynamics Spot | Quadrupedal locomotion, inspection | Complex terrain navigation |
 
+## 📊 Project Highlights
+
+- ✅ **3 Different Robot Platforms** integrated into single system
+- ✅ **GPU-Accelerated Computer Vision** using NVIDIA Isaac ROS
+- ✅ **Behavior Tree Architecture** for scalable robot control
+- ✅ **Real-Time Path Planning** with Nav2 stack
+- ✅ **6DOF Manipulation** with MoveIt2 integration
+- ✅ **Reinforcement Learning** locomotion controllers (policy files included)
+```
+
+---
+
 ## 📑 Table of Contents
 
 - [Quick Start](#-quick-start)
@@ -68,7 +80,6 @@ This system demonstrates advanced robotics concepts including:
 
 3. **Build the workspace:**
    ```bash
-   cd src
    colcon build --symlink-install
    source install/setup.bash
    ```
