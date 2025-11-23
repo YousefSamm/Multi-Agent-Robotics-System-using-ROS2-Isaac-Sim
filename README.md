@@ -13,7 +13,23 @@ This repository contains a comprehensive multi-agent robotic system implementati
 
 *Click the badge above to download and view the demo video.*
 
-**Alternative:** For better compatibility and autoplay functionality, consider uploading to [YouTube](https://www.youtube.com) and embedding the video, or converting to GIF format for automatic looping.
+## 🎯 Project Overview
+
+This system demonstrates advanced robotics concepts including:
+
+- **Multi-Agent Coordination:** Multiple robots working together in shared environment
+- **Behavior Trees:** Hierarchical decision-making for complex robot behaviors
+- **Real-Time Planning:** Dynamic path planning with obstacle avoidance
+- **GPU-Accelerated Perception:** AprilTag detection using NVIDIA Isaac ROS
+- **Industry-Standard Tools:** ROS2, Isaac Sim, MoveIt2, Nav2
+
+### Supported Robots
+
+| Robot | Capabilities | Use Case |
+|-------|-------------|----------|
+| 🦾 Mobile Manipulator (Nova Carter + Jaco) | Navigation + Manipulation | Warehouse automation, pick-and-place |
+| 🚜 Forklift | Autonomous navigation, pallet handling | Material transport |
+| 🐕 Boston Dynamics Spot | Quadrupedal locomotion, inspection | Complex terrain navigation |
 
 ## 📑 Table of Contents
 
