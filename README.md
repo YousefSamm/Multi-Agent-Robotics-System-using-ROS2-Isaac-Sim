@@ -9,7 +9,7 @@ This repository contains a comprehensive multi-agent robotic system implementati
 
 ## 🎥 Demo Video
 
-[Watch Demo Video](Magic%20Movie.MOV)
+https://github.com/YousefSamm/Multi-Agent-Robotis-System-using-ROS2-Isaac-Sim/raw/main/src/Magic%20Movie.MOV
 
 *Click the link above to view the demo video. The video will open in a new tab.*
 
