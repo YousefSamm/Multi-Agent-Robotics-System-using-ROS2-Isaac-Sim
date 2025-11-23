@@ -1,6 +1,31 @@
 # Multi-Agent Robotic System using ROS2 & Isaac Sim
 
+[![ROS2](https://img.shields.io/badge/ROS2-Humble-blue)](https://docs.ros.org/en/humble/)
+[![Isaac Sim](https://img.shields.io/badge/Isaac%20Sim-4.5+-green)](https://developer.nvidia.com/isaac-sim)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Ubuntu%2022.04-orange)](https://ubuntu.com/)
+
 This repository contains a comprehensive multi-agent robotic system implementation using ROS2 and NVIDIA Isaac Sim. The system includes various robotic agents including mobile manipulators, forklifts, and Spot robots, with integrated behavior trees, path planning, and simulation capabilities.
+
+## 🎥 Demo Video
+
+[Watch Demo Video](Magic%20Movie.MOV)
+
+*Click the link above to view the demo video. The video will open in a new tab.*
+
+**Note:** For autoplay and looping functionality, the video can be converted to GIF format. I can help you convert it if you'd like!
+
+## 📑 Table of Contents
+
+- [Quick Start](#-quick-start)
+- [Project Structure](#-project-structure)
+- [Supported Robots](#-supported-robots)
+- [Usage](#-usage)
+- [Development](#️-development)
+- [Configuration](#-configuration)
+- [Troubleshooting](#-troubleshooting)
+- [Contributing](#-contributing)
+- [License](#-license)
 
 ## 🚀 Quick Start
 
@@ -54,6 +79,10 @@ This repository contains a comprehensive multi-agent robotic system implementati
 - **`isaac_ros_common/`** - Isaac ROS common utilities ([NVIDIA-ISAAC-ROS/isaac_ros_common](https://github.com/NVIDIA-ISAAC-ROS/isaac_ros_common))
 - **`magic_enum/`** - C++ enum utilities ([Neargye/magic_enum](https://github.com/Neargye/magic_enum))
 
+### Additional Packages
+
+- **`kinova_moveit_config/`** - MoveIt2 configuration for Kinova Jaco arm (used with mobile manipulator)
+
 ## 🤖 Supported Robots
 
 ### Mobile Manipulator
@@ -100,6 +129,9 @@ This repository contains a comprehensive multi-agent robotic system implementati
    
    # Forklift navigation
    ros2 launch noham_path_planner forklift_path_planner.launch.py
+   
+   # Spot robot navigation
+   ros2 launch noham_path_planner spot_path_planner.launch.py
    ```
 
 ### Behavior Tree Operations
@@ -114,6 +146,16 @@ This repository contains a comprehensive multi-agent robotic system implementati
    
    # Spot behavior tree
    ros2 launch noham_bt spot_bt.launch.py
+   
+   # Room navigation (simple demo)
+   ros2 launch noham_bt room_navigation.launch.py
+   ```
+
+### Spot Robot Controller
+
+4. **Launch Spot robot controller:**
+   ```bash
+   ros2 launch spot_controller spot_controller.launch.py
    ```
 
 
@@ -188,15 +230,19 @@ colcon build --packages-up-to <package_name>
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the individual package licenses for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. Individual submodules may have their own licenses.
 
 ## 🤝 Contributing
+
+We welcome contributions! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on how to contribute to this project.
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
 4. Test thoroughly
 5. Submit a pull request
+
+For detailed contribution guidelines, see [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## 📞 Support
 
