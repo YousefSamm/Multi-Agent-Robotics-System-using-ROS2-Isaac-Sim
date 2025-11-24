@@ -47,6 +47,16 @@ This system demonstrates advanced robotics concepts including:
 | 🚜 Forklift | Autonomous navigation, pallet handling | Material transport |
 | 🐕 Boston Dynamics Spot | Quadrupedal locomotion, inspection | Complex terrain navigation |
 
+<div align="center">
+
+#### Robot Visualizations
+
+<img src="Mobile_manipulator.png" alt="Mobile Manipulator" width="300"/>
+<img src="Forklift.png" alt="Forklift" width="300"/>
+<img src="Spot.png" alt="Spot Robot" width="300"/>
+
+</div>
+
 ## 📊 Project Highlights
 
 - ✅ **3 Different Robot Platforms** integrated into single system
