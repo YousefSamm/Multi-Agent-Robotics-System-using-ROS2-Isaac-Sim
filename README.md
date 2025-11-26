@@ -210,13 +210,6 @@ This system demonstrates advanced robotics concepts including:
    ros2 launch noham_bt room_navigation.launch.py
 ```
 
-### Spot Robot Controller
-
-4. **Launch Spot robot controller:**
-```bash
-   ros2 launch spot_controller spot_controller.launch.py
-```
-
 ## 🛠️ Development
 
 ### Adding New Robots
